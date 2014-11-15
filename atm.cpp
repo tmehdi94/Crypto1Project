@@ -48,14 +48,49 @@ int main(int argc, char* argv[])
 		printf("atm> ");
 		fgets(buf, 79, stdin);
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
-		
+		std::vector<std::string> commands;
+		std::string hold = buf;
+		std:string token = strtok(hold," ");
+		int i = 0;
+		while(token != NULL){
+			commands[i] = token;
+			i++;
+			token = strtok(NULL," ");
+		}
 		//TODO: your input parsing code has to put data here
 		char packet[1024];
 		int length = 1;
 		
 		//input parsing
-		if(!strcmp(buf, "logout"))
+		if(!strcmp(buf, "logout")){
 			break;
+		}
+		else if(commands[0] == "login"){
+			if(commands.size() != 2){
+				std::cout << "Not valid command";
+			}
+			
+
+		}
+		else if(commands[0] == "balance"){
+
+		}
+		else if(commands[0] == "withdraw"){
+			if(commands.size() != 2){
+				std::cout << "Not valid command";
+			}
+
+
+		}
+		else if(commands[0] == "transfer"){
+			if(commands.size() != 3){
+				std::cout << "Not valid command";
+			}
+
+		}
+		else{
+			std::cout << "Not valid command";
+		}
 		//TODO: other commands
 		
 		//send the packet through the proxy to the bank
