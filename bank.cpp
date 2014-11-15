@@ -12,11 +12,37 @@
 #include <pthread.h>
 #include <string.h>
 
+
 void* client_thread(void* arg);
 void* console_thread(void* arg);
 
+class Account{
+	std::string name;
+	int money;
+	const int pin;
+	// mutex so multiple cant access account at same time??
+  public:
+  	Account(std::string, int, int);
+};
+
+Account::Account(std string::n, int m, int p){
+	money = m;
+	name = n;
+	pin = p;
+}
+
+std::vector<Account> Accounts;
+
+
 int main(int argc, char* argv[])
 {
+	//Account a("Alice", 100, );
+	//Account b("Bob", 50, );
+	//Account e("Eve", 0 , );
+	//Account.push_back(a);
+	//Account.push_back(b);
+	//Account.push_back(e);
+
 	if(argc != 2)
 	{
 		printf("Usage: bank listen-port\n");
@@ -96,7 +122,47 @@ void* client_thread(void* arg)
 		}
 		
 		//TODO: process packet data
+
+		//decryption
+		//store in buffer after decryption
+
+
+		std::vector<std::string> commands;
+		std::string hold = buffer;
+		std:string token = strtok(hold," ");
+		int i = 0;
+		while(token != NULL){
+			commands[i] = token;
+			i++;
+			token = strtok(NULL," ");
+		}
+
+		if(commands[0] == "login"){
+			if(commands.size() != 2){
+				std::cout << "Not valid command";
+			}
+			
+
+		}
+		else if(commands[0] == "balance"){
+
+		}
+		else if(commands[0] == "withdraw"){
+			if(commands.size() != 2){
+				std::cout << "Not valid command";
+			}
+
+
+		}
+		else if(commands[0] == "transfer"){
+			if(commands.size() != 3){
+				std::cout << "Not valid command";
+			}
+
+		}
 		
+
+		//encrypt
 		//TODO: put new data in packet
 		
 		//send the new packet back to the client
