@@ -40,10 +40,8 @@ int main(int argc, char* argv[])
 		printf("fail to connect to proxy\n");
 		return -1;
 	}
-	//establish connection with bank
 
-
-
+	bool loggedIn = false;
 	//input loop
 	char buf[80];
 	while(1)
@@ -74,6 +72,8 @@ int main(int argc, char* argv[])
 				std::cout << "Not valid input";
 				pass = false;
 			}
+			//confirmation and authentication.
+			//if good, loggedIn = true;
 		}
 		else if(commands[0] == "balance"){
 
@@ -98,10 +98,12 @@ int main(int argc, char* argv[])
 			pass = false;
 		}
 		//TODO: other commands
-		
+
 		//send the packet through the proxy to the bank
-		
-		if(pass){//if no error in input
+
+		if(pass && loggedIn){//if no error in input
+			//encrypt and pad packet. 
+
 			if(sizeof(int) != send(sock, &length, sizeof(int), 0))
 			{
 				printf("fail to send packet length\n");
@@ -112,24 +114,27 @@ int main(int argc, char* argv[])
 				printf("fail to send packet\n");
 				break;
 			}
-		
-			//TODO: do something with response packet
-			if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
-			{
-				printf("fail to read packet length\n");
-				break;
-			}
-			if(length >= 1024)
-			{
-				printf("packet too long\n");
-				break;
-			}
-			if(length != recv(sock, packet, length, 0))
-			{
-				printf("fail to read packet\n");
-				break;
-			}
 		}
+
+		//TODO: do something with response packet
+		if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
+		{
+			printf("fail to read packet length\n");
+			break;
+		}
+		if(length >= 1024)
+		{
+			printf("packet too long\n");
+			break;
+		}
+		if(length != recv(sock, packet, length, 0))
+		{
+			printf("fail to read packet\n");
+			break;
+		}
+
+		//decrypt and authenticate packet
+		
 	}
 	
 	//cleanup

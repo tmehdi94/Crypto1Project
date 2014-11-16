@@ -123,7 +123,7 @@ void* client_thread(void* arg)
 		
 		//TODO: process packet data
 
-		//decryption
+		//decrypt and authenticate
 		//store in buffer after decryption
 
 
