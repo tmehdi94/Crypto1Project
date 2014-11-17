@@ -230,5 +230,40 @@ void* console_thread(void* arg)
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
 		
 		//TODO: your input parsing code has to go here
+		std::vector<std::string> commands;
+		std::string hold = buf;
+		std:string token = strtok(hold," ");
+		int i = 0;
+		while(token != NULL){
+			commands[i] = token;
+			i++;
+			token = strtok(NULL," ");
+		}
+
+
+		if(commands[0] == "deposit"){
+			int i;
+			for(i = 0; i < Accounts.size(); i++){
+				if(Accounts[i].name == commands[1]){
+					//lock mutex
+					Accounts[i].balance += commands[2];
+					break;
+				}
+			}
+			if(i == Accounts.size()){
+				//account not found
+			}
+		}
+		else if(commands[0] == "balance"){
+			int i;
+			for(i = 0; i < Accounts.size(); i++){
+				if(Accounts[i].name == commands[1]){
+					//print account balance
+				}
+			}
+		}
+		else{
+			//not valid;
+		}
 	}
 }
