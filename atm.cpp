@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 		}
 		else if(commands[0] == "login"){
 			if(commands.size() != 2){
-				std::cout << "Not valid input";
+				std::cout << "Not valid input" << endl;
 				pass = false;
 			}
 			//confirmation and authentication.
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 		}
 		else if(commands[0] == "withdraw"){
 			if(commands.size() != 2){
-				std::cout << "Not valid input";
+				std::cout << "Not valid input" << endl;
 				pass = false;
 			}
 
@@ -88,13 +88,13 @@ int main(int argc, char* argv[])
 		}
 		else if(commands[0] == "transfer"){
 			if(commands.size() != 3){
-				std::cout << "Not valid input";
+				std::cout << "Not valid input" << endl;
 				pass = false;
 			}
 
 		}
 		else{
-			std::cout << "Not valid input";
+			std::cout << "Not valid input" << endl;
 			pass = false;
 		}
 		//TODO: other commands
@@ -134,7 +134,9 @@ int main(int argc, char* argv[])
 		}
 
 		//decrypt and authenticate packet
-		
+		std::cout << packet << endl;
+
+
 	}
 	
 	//cleanup

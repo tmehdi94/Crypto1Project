@@ -18,18 +18,26 @@ void* console_thread(void* arg);
 
 class Account{
 	std::string name;
-	int money;
+	int balance;
 	const int pin;
 	// mutex so multiple cant access account at same time??
   public:
   	Account(std::string, int, int);
+  	/*Account & operator= (const Account & a){
+  		if (this != a){
+            
+        }
+        return *this;
+  	}*/
 };
 
 Account::Account(std string::n, int m, int p){
-	money = m;
+	balance = m;
 	name = n;
 	pin = p;
 }
+
+
 
 std::vector<Account> Accounts;
 
@@ -105,6 +113,7 @@ void* client_thread(void* arg)
 	//input loop
 	int length;
 	char packet[1024];
+	Account current;
 	while(1)
 	{
 		//read the packet from the ATM
@@ -138,27 +147,53 @@ void* client_thread(void* arg)
 		}
 
 		if(commands[0] == "login"){
-			if(commands.size() != 2){
-				std::cout << "Not valid command";
+			for(int i = 0; i < Accounts.size(); i++){
+				if(commands[1] == Accounts[i].name){
+					char pin[20];
+					//read for pin
+					if(atoi(pin) == Accounts[i].pin){
+						//write that logged in;
+						current = &Accounts[i];
+						break;
+					}
+				}
 			}
-			
+			if(current == NULL){
+				//login and pin dont match
+			}
 
 		}
 		else if(commands[0] == "balance"){
-
+			buffer = current.balance;
 		}
 		else if(commands[0] == "withdraw"){
-			if(commands.size() != 2){
-				std::cout << "Not valid command";
+			//lock mutex
+			if(current.balance > commands[1]){
+				current.balance -= commands[1];
+				//set buffer
 			}
-
-
+			else{
+				//not enough money 
+			}
+			//unlock mutex
 		}
 		else if(commands[0] == "transfer"){
-			if(commands.size() != 3){
-				std::cout << "Not valid command";
+			//lock mutex
+			if(current.balance > commands[1]){
+				int i;
+				for(i = 0; i < Accounts.size(); i++){
+					if(Accounts[i].name == commands[2]){
+						current.balance -= commands[1];
+						Accounts[i].balance += commands[1];
+						//confirm transfer
+						break;
+					}
+				}
+				if(i == Accounts.size()){
+					//user account not found;
+				}
 			}
-
+			//unlock mutex
 		}
 		
 
