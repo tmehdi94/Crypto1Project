@@ -209,7 +209,7 @@ void* client_thread(void* arg)
     Account* current;
     while(1)
     {
-        //bzero(packet, strlen(packet));
+        bzero(packet, strlen(packet));
         //read the packet from the ATM
         if(sizeof(int) != recv(csock, &length, sizeof(int), 0)){
             break;
@@ -251,12 +251,7 @@ void* client_thread(void* arg)
             {
                 if(commands[1] == Accounts[i].getName())
                 {
-                    //printf("%s\n", "pin");
-                    //char pin[5];
-                    //recv(csock, pin, 5, 0);
-                    //std::cout << pin;
-                    //fflush(NULL);
-                    if(atoi(pin) == Accounts[i].getPin())
+                    if(atoi(commands[2].c_str()) == Accounts[i].getPin())
                     {
                         buffer = "Logged in";
                         current = &Accounts[i];
@@ -314,7 +309,7 @@ void* client_thread(void* arg)
                 }
             }
         }
-
+        bzero(packet, strlen(packet));
         
         strcat(packet, buffer.c_str());
         length = strlen(packet);

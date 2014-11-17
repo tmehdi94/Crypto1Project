@@ -46,14 +46,18 @@ int main(int argc, char* argv[])
 	//bool loggedIn = false;
 	//input loop
 	char buf[80];
+	char packet[1024];
+	std::vector<std::string> commands;
 	while(1)
 	{
 		bzero(buf, strlen(buf));
+		bzero(packet,strlen(packet));
+		commands.clear();
 
 		printf("atm> ");
 		fgets(buf, 79, stdin);
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
-		std::vector<std::string> commands;
+		
 		char hold[strlen(buf)];
 		strcpy(hold,buf);
 		char* token = strtok(hold," ");
@@ -65,8 +69,8 @@ int main(int argc, char* argv[])
 			token = strtok(NULL," ");
 		}
 		//TODO: your input parsing code has to put data here
-		char packet[1024];
-		bzero(packet,strlen(packet));
+		
+		
 		int length = 1;
 		
 		//input parsing
@@ -83,10 +87,8 @@ int main(int argc, char* argv[])
 			bzero(pin, strlen(pin));
 			std::cout << "Enter PIN: ";
 			fgets(pin, 5, stdin);
-			pin[strlen(pin)] = '\0';
-			//int n = send(sock, pin, 5, 0);
-			//std::cout << n;
-			//send(sock, (void*)pin, strlen(pin), 0);
+			strcat(buf, " ");
+			strcat(buf, pin);
 			//confirmation and authentication.
 			//if good, loggedIn = true;
 		}
@@ -132,29 +134,29 @@ int main(int argc, char* argv[])
 				break;
 			}
 			
-		}
-		length = 0;
-		//TODO: do something with response packet
-		if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
-		{
-			std::cout << length;
-			printf("fail to read packet length\n");
-			break;
-		}
-		if(length >= 1024)
-		{
-			printf("packet too long\n");
-			break;
-		}
-		if(length != recv(sock, packet, length, 0))
-		{
-			printf("fail to read packet\n");
-			break;
-		}
+			length = 1;
+			bzero(packet, strlen(packet));
+			//TODO: do something with response packet
+			if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
+			{
+				std::cout << length;
+				printf("fail to read packet length\n");
+				break;
+			}
+			if(length >= 1024)
+			{
+				printf("packet too long\n");
+				break;
+			}
+			if(length != recv(sock, packet, length, 0))
+			{
+				printf("fail to read packet\n");
+				break;
+			}
 
-		//decrypt and authenticate packet
-		std::cout << packet << std::endl;
-
+			//decrypt and authenticate packet
+			std::cout << packet << std::endl;
+		}
 
 	}
 	
