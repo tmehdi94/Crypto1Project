@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
+#include <vector>
 
 int main(int argc, char* argv[])
 {
@@ -50,11 +52,12 @@ int main(int argc, char* argv[])
 		fgets(buf, 79, stdin);
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
 		std::vector<std::string> commands;
-		std::string hold = buf;
-		std:string token = strtok(hold," ");
+		char hold[strlen(buf)];
+		strcpy(hold,buf);
+		char* token = strtok(hold," ");
 		int i = 0;
 		while(token != NULL){
-			commands[i] = token;
+			commands[i] = std::string(token);
 			i++;
 			token = strtok(NULL," ");
 		}
@@ -69,7 +72,7 @@ int main(int argc, char* argv[])
 		}
 		else if(commands[0] == "login"){
 			if(commands.size() != 2){
-				std::cout << "Not valid input" << endl;
+				std::cout << "Not valid input" << std::endl;
 				pass = false;
 			}
 			//confirmation and authentication.
@@ -80,7 +83,7 @@ int main(int argc, char* argv[])
 		}
 		else if(commands[0] == "withdraw"){
 			if(commands.size() != 2){
-				std::cout << "Not valid input" << endl;
+				std::cout << "Not valid input" << std::endl;
 				pass = false;
 			}
 
@@ -88,16 +91,18 @@ int main(int argc, char* argv[])
 		}
 		else if(commands[0] == "transfer"){
 			if(commands.size() != 3){
-				std::cout << "Not valid input" << endl;
+				std::cout << "Not valid input" << std::endl;
 				pass = false;
 			}
 
 		}
 		else{
-			std::cout << "Not valid input" << endl;
+			std::cout << "Not valid input" << std::endl;
 			pass = false;
 		}
 		//TODO: other commands
+		strcpy(packet, buf);
+		length = strlen(buf);
 
 		//send the packet through the proxy to the bank
 
@@ -134,7 +139,7 @@ int main(int argc, char* argv[])
 		}
 
 		//decrypt and authenticate packet
-		std::cout << packet << endl;
+		std::cout << packet << std::endl;
 
 
 	}

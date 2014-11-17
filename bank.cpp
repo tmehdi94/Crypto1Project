@@ -11,30 +11,40 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <iostream>
+#include <vector>
 
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
 
 class Account{
-	std::string name;
-	int balance;
-	const int pin;
 	// mutex so multiple cant access account at same time??
   public:
+  	std::string name;
+	int balance;
+	int pin;
   	Account(std::string, int, int);
-  	/*Account & operator= (const Account & a){
-  		if (this != a){
-            
+  	Account();
+  	Account & operator= (const Account & a){
+  		if (this != &a){
+            this->name = a.name;
+            this->balance = a.balance;
+            this->pin = a.pin;
         }
         return *this;
-  	}*/
+  	}
 };
 
-Account::Account(std string::n, int m, int p){
+Account::Account (std::string n, int m, int p){
 	balance = m;
 	name = n;
 	pin = p;
+}
+Account::Account (){
+	balance = 0;
+	name = "";
+	pin = 0000;
 }
 
 
@@ -44,12 +54,12 @@ std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
-	//Account a("Alice", 100, );
-	//Account b("Bob", 50, );
-	//Account e("Eve", 0 , );
-	//Account.push_back(a);
-	//Account.push_back(b);
-	//Account.push_back(e);
+	Account a("Alice", 100, 1234);
+	Account b("Bob", 50, 1234);
+	Account e("Eve", 0 , 1234);
+	Accounts.push_back(a);
+	Accounts.push_back(b);
+	Accounts.push_back(e);
 
 	if(argc != 2)
 	{
@@ -113,7 +123,7 @@ void* client_thread(void* arg)
 	//input loop
 	int length;
 	char packet[1024];
-	Account current;
+	Account* current;
 	while(1)
 	{
 		//read the packet from the ATM
@@ -135,24 +145,26 @@ void* client_thread(void* arg)
 		//decrypt and authenticate
 		//store in buffer after decryption
 
-
 		std::vector<std::string> commands;
-		std::string hold = buffer;
-		std:string token = strtok(hold," ");
+		char hold[strlen(packet)];
+		strcpy(hold, packet);
+		//char* hold = buffer;
+		char* token = strtok(hold," ");
 		int i = 0;
 		while(token != NULL){
-			commands[i] = token;
+			commands[i] = std::string(token);
 			i++;
 			token = strtok(NULL," ");
 		}
+		std::string buffer;
 
 		if(commands[0] == "login"){
 			for(int i = 0; i < Accounts.size(); i++){
 				if(commands[1] == Accounts[i].name){
-					char pin[20];
+					char * pin;
 					//read for pin
 					if(atoi(pin) == Accounts[i].pin){
-						//write that logged in;
+						buffer = "Logged in";
 						current = &Accounts[i];
 						break;
 					}
@@ -160,43 +172,49 @@ void* client_thread(void* arg)
 			}
 			if(current == NULL){
 				//login and pin dont match
+				buffer = "Username and PIN don't match";
 			}
 
 		}
 		else if(commands[0] == "balance"){
-			buffer = current.balance;
+			buffer = current->balance;
 		}
 		else if(commands[0] == "withdraw"){
 			//lock mutex
-			if(current.balance > commands[1]){
-				current.balance -= commands[1];
-				//set buffer
+			if(current->balance > atoi(commands[1].c_str())){
+				current->balance -= atoi(commands[1].c_str());
+				buffer = commands[1] + " withdrawn";
 			}
 			else{
-				//not enough money 
+				buffer = "Insufficient funds";
 			}
 			//unlock mutex
 		}
 		else if(commands[0] == "transfer"){
 			//lock mutex
-			if(current.balance > commands[1]){
+			if(current->balance > atoi(commands[1].c_str())){
 				int i;
 				for(i = 0; i < Accounts.size(); i++){
 					if(Accounts[i].name == commands[2]){
-						current.balance -= commands[1];
-						Accounts[i].balance += commands[1];
-						//confirm transfer
+						current->balance -= atoi(commands[1].c_str());
+						Accounts[i].balance += atoi(commands[1].c_str());
+						buffer = commands[1] + " Transferred to " + commands[2];
 						break;
 					}
 				}
 				if(i == Accounts.size()){
 					//user account not found;
+					buffer = "User could not be found";
 				}
+			}
+			else{
+				buffer = "Insufficient funds";
 			}
 			//unlock mutex
 		}
 		
-
+		length = buffer.size();
+		strcat(packet, buffer.c_str());
 		//encrypt
 		//TODO: put new data in packet
 		
@@ -231,8 +249,9 @@ void* console_thread(void* arg)
 		
 		//TODO: your input parsing code has to go here
 		std::vector<std::string> commands;
-		std::string hold = buf;
-		std:string token = strtok(hold," ");
+		char hold[strlen(buf)];
+		strcpy(hold, buf);
+		char * token = strtok(hold," ");
 		int i = 0;
 		while(token != NULL){
 			commands[i] = token;
@@ -246,7 +265,7 @@ void* console_thread(void* arg)
 			for(i = 0; i < Accounts.size(); i++){
 				if(Accounts[i].name == commands[1]){
 					//lock mutex
-					Accounts[i].balance += commands[2];
+					Accounts[i].balance += atoi(commands[2].c_str());
 					break;
 				}
 			}
