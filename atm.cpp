@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	bool loggedIn = false;
+	//bool loggedIn = false;
 	//input loop
 	char buf[80];
 	while(1)
@@ -57,7 +57,8 @@ int main(int argc, char* argv[])
 		char* token = strtok(hold," ");
 		int i = 0;
 		while(token != NULL){
-			commands[i] = std::string(token);
+			
+			commands.push_back(std::string(token));
 			i++;
 			token = strtok(NULL," ");
 		}
@@ -106,7 +107,7 @@ int main(int argc, char* argv[])
 
 		//send the packet through the proxy to the bank
 
-		if(pass && loggedIn){//if no error in input
+		if(pass){// && loggedIn){//if no error in input
 			//encrypt and pad packet. 
 
 			if(sizeof(int) != send(sock, &length, sizeof(int), 0))
