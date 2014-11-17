@@ -92,7 +92,7 @@ bool Account::withdraw(int amount)
 {
     pthread_mutex_lock(&lock);
     bool status = false;
-    if(balance > amount)
+    if(balance >= amount)
     {
         balance -= amount;
         status = true;
@@ -118,7 +118,7 @@ bool Account::transfer(int amount, Account other)
 {
     pthread_mutex_lock(&lock);
     bool status = false;
-    if(balance > amount)
+    if(balance >= amount)
     {
         balance -= amount;
         status = true;
