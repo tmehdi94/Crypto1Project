@@ -209,9 +209,11 @@ void* client_thread(void* arg)
     Account* current;
     while(1)
     {
+        //bzero(packet, strlen(packet));
         //read the packet from the ATM
-        if(sizeof(int) != recv(csock, &length, sizeof(int), 0))
+        if(sizeof(int) != recv(csock, &length, sizeof(int), 0)){
             break;
+        }
         if(length >= 1024)
         {
             printf("packet too long\n");
@@ -222,7 +224,6 @@ void* client_thread(void* arg)
             printf("[bank] fail to read packet\n");
             break;
         }
-
         //TODO: process packet data
 
         //decrypt and authenticate
@@ -237,7 +238,8 @@ void* client_thread(void* arg)
         int i = 0;
         while(token != NULL)
         {
-            commands[i] = std::string(token);
+            //printf("%s\n", "shit");
+            commands.push_back(std::string(token));
             i++;
             token = strtok(NULL," ");
         }
@@ -249,8 +251,11 @@ void* client_thread(void* arg)
             {
                 if(commands[1] == Accounts[i].getName())
                 {
-                    char * pin;
-                    //read for pin
+                    //printf("%s\n", "pin");
+                    //char pin[5];
+                    //recv(csock, pin, 5, 0);
+                    //std::cout << pin;
+                    //fflush(NULL);
                     if(atoi(pin) == Accounts[i].getPin())
                     {
                         buffer = "Logged in";
@@ -310,8 +315,9 @@ void* client_thread(void* arg)
             }
         }
 
-        length = buffer.size();
+        
         strcat(packet, buffer.c_str());
+        length = strlen(packet);
         //encrypt
         //TODO: put new data in packet
 

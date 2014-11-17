@@ -48,6 +48,8 @@ int main(int argc, char* argv[])
 	char buf[80];
 	while(1)
 	{
+		bzero(buf, strlen(buf));
+
 		printf("atm> ");
 		fgets(buf, 79, stdin);
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
@@ -64,6 +66,7 @@ int main(int argc, char* argv[])
 		}
 		//TODO: your input parsing code has to put data here
 		char packet[1024];
+		bzero(packet,strlen(packet));
 		int length = 1;
 		
 		//input parsing
@@ -76,6 +79,14 @@ int main(int argc, char* argv[])
 				std::cout << "Not valid input" << std::endl;
 				pass = false;
 			}
+			char pin[5];
+			bzero(pin, strlen(pin));
+			std::cout << "Enter PIN: ";
+			fgets(pin, 5, stdin);
+			pin[strlen(pin)] = '\0';
+			//int n = send(sock, pin, 5, 0);
+			//std::cout << n;
+			//send(sock, (void*)pin, strlen(pin), 0);
 			//confirmation and authentication.
 			//if good, loggedIn = true;
 		}
@@ -120,11 +131,13 @@ int main(int argc, char* argv[])
 				printf("fail to send packet\n");
 				break;
 			}
+			
 		}
-
+		length = 0;
 		//TODO: do something with response packet
 		if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
 		{
+			std::cout << length;
 			printf("fail to read packet length\n");
 			break;
 		}
