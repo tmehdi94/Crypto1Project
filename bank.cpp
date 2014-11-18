@@ -110,13 +110,14 @@ bool Account::deposit(int amount)
 {
     //TODO overflow check
     pthread_mutex_lock(&lock);
+    bool status = false;
     if(amount > 0)
     {
         balance += amount;
-        return true;
+        status = true;
     }
     pthread_mutex_unlock(&lock);
-    return false;
+    return status;
 }
 
 bool Account::transfer(int amount, Account other)
