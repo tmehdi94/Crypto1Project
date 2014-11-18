@@ -89,11 +89,12 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    std::string pin;
+                    char pin[10];
                     std::cout << "Enter PIN: ";
-                    std::cin >> pin;
+                    fgets(pin, 9, stdin);
+                    pin[strlen(pin) - 1] = '\0';
                     strcat(buf, " ");
-                    strcat(buf, pin.c_str());
+                    strcat(buf, pin);
                     //confirmation and authentication.
                     //if good, loggedIn = true;
                 }
