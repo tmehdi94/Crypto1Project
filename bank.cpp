@@ -93,7 +93,7 @@ bool Account::withdraw(int amount)
 {
     pthread_mutex_lock(&lock);
     bool status = false;
-    if(balance >= amount && amount > 0)
+    if(balance >= amount)
     {
         balance -= amount;
         status = true;
@@ -111,9 +111,12 @@ bool Account::deposit(int amount)
     //TODO overflow check
     pthread_mutex_lock(&lock);
     if(amount > 0)
+    {
         balance += amount;
+        return true;
+    }
     pthread_mutex_unlock(&lock);
-    return true;
+    return false;
 }
 
 bool Account::transfer(int amount, Account other)
@@ -123,15 +126,15 @@ bool Account::transfer(int amount, Account other)
     if(balance >= amount && amount > 0)
     {
         balance -= amount;
+        other.deposit(amount);
         status = true;
     }
     else
     {
         status = false;
     }
-
-    other.deposit(amount);
     pthread_mutex_unlock(&lock);
+    return status;
 }
 
 //Perhaps we should write this to a file so a power out attack cant erase accounts
@@ -275,8 +278,12 @@ void* client_thread(void* arg)
             buffer = s.str();
         }
         else if(commands[0] == "withdraw")
-        {
-            if (current->withdraw(atoi(commands[1].c_str())))
+        {   
+            if (atoi(commands[1].c_str()) <= 0)
+            {
+                buffer = "Invalid amount";
+            }
+            else if (current->withdraw(atoi(commands[1].c_str())))
             {
                 buffer = commands[1] + " withdrawn";
             }
@@ -295,8 +302,11 @@ void* client_thread(void* arg)
                     break;
                 }
             }
-
-            if(other == NULL)
+            if (atoi(commands[1].c_str()) <= 0)
+            {
+                buffer = "Invalid amount";
+            }
+            else if(other == NULL)
             {
                 //user account not found;
                 buffer = "User could not be found";
