@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <limits.h>
 #include <iostream>
 #include <vector>
 #include <sstream>
@@ -108,13 +109,20 @@ bool Account::withdraw(int amount)
 
 bool Account::deposit(int amount)
 {
-    //TODO overflow check
     pthread_mutex_lock(&lock);
     bool status = false;
     if(amount > 0)
     {
-        balance += amount;
-        status = true;
+        int temp_balance = balance + amount;
+        if (temp_balance < 0)
+        {
+            //Too much money for bank to handle
+        }
+        else
+        {
+            balance = temp_balance;
+            status = true;
+        }
     }
     pthread_mutex_unlock(&lock);
     return status;
