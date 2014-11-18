@@ -90,6 +90,7 @@ int main(int argc, char* argv[])
                 std::string pin;
                 std::cout << "Enter PIN: ";
                 std::cin >> pin;
+                fflush(stdin);
                 strcat(buf, " ");
                 strcat(buf, pin.c_str());
                 //confirmation and authentication.
@@ -174,7 +175,6 @@ int main(int argc, char* argv[])
 			//decrypt and authenticate packet
 			std::cout << packet << std::endl;
 		}
-        std::cout << "hello\n";
 	}
 	
 	//cleanup
