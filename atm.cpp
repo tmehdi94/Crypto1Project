@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 		commands.clear();
 
 		printf("atm> ");
-		fgets(buf, 79, stdin);
+		fgets(buf, 80, stdin);
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
 		
 		char hold[strlen(buf)];
@@ -72,110 +72,108 @@ int main(int argc, char* argv[])
 		
 		int length = 1;
 		
-		//input parsing
-		bool pass = true;
-		if(!strcmp(buf, "logout"))
+        if (commands.size() != 0)
         {
-			break;
-		}
-		else if(commands[0] == "login") // and not loggedIn
-        {
-			if(commands.size() != 2)
+            //input parsing
+            bool pass = true;
+            if(!strcmp(buf, "logout"))
             {
-				std::cout << "Not valid input for login" << std::endl;
-				pass = false;
-			}
+                break;
+            }
+            else if(commands[0] == "login") // and not loggedIn
+            {
+                if(commands.size() != 2)
+                {
+                    std::cout << "Not valid input for login" << std::endl;
+                    pass = false;
+                }
+                else
+                {
+                    std::string pin;
+                    std::cout << "Enter PIN: ";
+                    std::cin >> pin;
+                    strcat(buf, " ");
+                    strcat(buf, pin.c_str());
+                    //confirmation and authentication.
+                    //if good, loggedIn = true;
+                }
+            }
+            else if(commands[0] == "balance")
+            {
+                if(commands.size() != 1)
+                {
+                    std::cout << "Not valid input for balance" << std::endl;
+                    pass = false;
+                }
+            }
+            else if(commands[0] == "withdraw")
+            {
+                if(commands.size() != 2)
+                {
+                    std::cout << "Not valid input for withdraw" << std::endl;
+                    pass = false;
+                }
+            }
+            else if(commands[0] == "transfer")
+            {
+                if(commands.size() != 3)
+                {
+                    std::cout << "Not valid input transfer" << std::endl;
+                    pass = false;
+                }
+            }
             else
             {
-                std::string pin;
-                std::cout << "Enter PIN: ";
-                std::cin >> pin;
-                fflush(stdin);
-                strcat(buf, " ");
-                strcat(buf, pin.c_str());
-                //confirmation and authentication.
-                //if good, loggedIn = true;
+                std::cout << "Unknown input" << std::endl;
+                pass = false;
             }
-		}
-		else if(commands[0] == "balance")
-        {
-			if(commands.size() != 1)
-            {
-				std::cout << "Not valid input for balance" << std::endl;
-				pass = false;
-			}
-		}
-		else if(commands[0] == "withdraw")
-        {
-			if(commands.size() != 2)
-            {
-				std::cout << "Not valid input for withdraw" << std::endl;
-				pass = false;
-			}
-		}
-		else if(commands[0] == "transfer")
-        {
-			if(commands.size() != 3)
-            {
-				std::cout << "Not valid input transfer" << std::endl;
-				pass = false;
-			}
-		}
-		else
-        {
-			std::cout << "Unknown input" << std::endl;
-            for (unsigned int i = 0; i < commands.size(); i++)
-            {
-                std::cout << commands[i] << " ";
+            //TODO: other commands
+            strcpy(packet, buf);
+            length = strlen(buf);
+
+            //send the packet through the proxy to the bank
+
+            if(pass)
+            {// && loggedIn){//if no error in input
+                //encrypt and pad packet. 
+
+                if(sizeof(int) != send(sock, &length, sizeof(int), 0))
+                {
+                    printf("fail to send packet length\n");
+                    break;
+                }
+                if(length != send(sock, (void*)packet, length, 0))
+                {
+                    printf("fail to send packet\n");
+                    break;
+                }
+
+                length = 1;
+                bzero(packet, strlen(packet));
+                //TODO: do something with response packet
+                if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
+                {
+                    std::cout << length;
+                    printf("fail to read packet length\n");
+                    break;
+                }
+                if(length >= 1024)
+                {
+                    printf("packet too long\n");
+                    break;
+                }
+                if(length != recv(sock, packet, length, 0))
+                {
+                    printf("fail to read packet\n");
+                    break;
+                }
+
+                //decrypt and authenticate packet
+                std::cout << packet << std::endl;
             }
-            std::cout << std::endl;
-			pass = false;
-		}
-		//TODO: other commands
-		strcpy(packet, buf);
-		length = strlen(buf);
-
-		//send the packet through the proxy to the bank
-
-		if(pass)
-        {// && loggedIn){//if no error in input
-			//encrypt and pad packet. 
-
-			if(sizeof(int) != send(sock, &length, sizeof(int), 0))
-			{
-				printf("fail to send packet length\n");
-				break;
-			}
-			if(length != send(sock, (void*)packet, length, 0))
-			{
-				printf("fail to send packet\n");
-				break;
-			}
-			
-			length = 1;
-			bzero(packet, strlen(packet));
-			//TODO: do something with response packet
-			if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
-			{
-				std::cout << length;
-				printf("fail to read packet length\n");
-				break;
-			}
-			if(length >= 1024)
-			{
-				printf("packet too long\n");
-				break;
-			}
-			if(length != recv(sock, packet, length, 0))
-			{
-				printf("fail to read packet\n");
-				break;
-			}
-
-			//decrypt and authenticate packet
-			std::cout << packet << std::endl;
-		}
-	}
+        }
+        std::cout << std::endl;
+    }
 	
 	//cleanup
 	close(sock);
