@@ -13,6 +13,7 @@
 #include <string.h>
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
@@ -92,7 +93,7 @@ bool Account::withdraw(int amount)
 {
     pthread_mutex_lock(&lock);
     bool status = false;
-    if(balance >= amount)
+    if(balance >= amount && amount > 0)
     {
         balance -= amount;
         status = true;
@@ -109,7 +110,8 @@ bool Account::deposit(int amount)
 {
     //TODO overflow check
     pthread_mutex_lock(&lock);
-    balance += amount;
+    if(amount > 0)
+        balance += amount;
     pthread_mutex_unlock(&lock);
     return true;
 }
@@ -118,7 +120,7 @@ bool Account::transfer(int amount, Account other)
 {
     pthread_mutex_lock(&lock);
     bool status = false;
-    if(balance >= amount)
+    if(balance >= amount && amount > 0)
     {
         balance -= amount;
         status = true;
@@ -268,7 +270,9 @@ void* client_thread(void* arg)
         }
         else if(commands[0] == "balance")
         {
-            buffer = current->getBalance();
+            std::stringstream s;
+            s << current->getBalance();
+            buffer = s.str();
         }
         else if(commands[0] == "withdraw")
         {
