@@ -32,7 +32,7 @@ class Account
         void setPin(int p);
         bool withdraw(int amount);
         bool deposit(int amount);
-        bool transfer(int amount, Account other);
+        bool transfer(int amount, Account *other);
 
     private:
         std::string name;
@@ -128,15 +128,17 @@ bool Account::deposit(int amount)
     return status;
 }
 
-bool Account::transfer(int amount, Account other)
+bool Account::transfer(int amount, Account *other)
 {
     pthread_mutex_lock(&lock);
     bool status = false;
     if(balance >= amount && amount > 0)
     {
         balance -= amount;
-        other.deposit(amount);
-        status = true;
+        if (other->deposit(amount))
+        {
+            status = true;
+        }
     }
     else
     {
@@ -311,24 +313,27 @@ void* client_thread(void* arg)
                     break;
                 }
             }
-            if (atoi(commands[1].c_str()) <= 0)
-            {
-                buffer = "Invalid amount";
-            }
-            else if(other == NULL)
+            if(other == NULL)
             {
                 //user account not found;
                 buffer = "User could not be found";
             }
             else
             {
-                if (current->transfer(atoi(commands[1].c_str()), *other))
+                if (atoi(commands[1].c_str()) <= 0)
                 {
-                    buffer = commands[1] + " Transferred to " + commands[2];
+                    buffer = "Invalid amount";
                 }
                 else
                 {
-                    buffer = "Insufficient funds";
+                    if (current->transfer(atoi(commands[1].c_str()), other))
+                    {
+                        buffer = commands[1] + " Transferred to " + commands[2];
+                    }
+                    else
+                    {
+                        buffer = "Insufficient funds";
+                    }
                 }
             }
         }
