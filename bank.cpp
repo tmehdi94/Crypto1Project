@@ -139,6 +139,11 @@ bool Account::transfer(int amount, Account *other)
         {
             status = true;
         }
+        else
+        {
+            //add back
+            balance += amount;
+        }
     }
     else
     {

@@ -62,7 +62,8 @@ int main(int argc, char* argv[])
 		strcpy(hold,buf);
 		char* token = strtok(hold," ");
 		int i = 0;
-		while(token != NULL){
+		while(token != NULL)
+        {
 			
 			commands.push_back(std::string(token));
 			i++;
@@ -75,12 +76,15 @@ int main(int argc, char* argv[])
 		
 		//input parsing
 		bool pass = true;
-		if(!strcmp(buf, "logout")){
+		if(!strcmp(buf, "logout"))
+        {
 			break;
 		}
-		else if(commands[0] == "login"){
-			if(commands.size() != 2){
-				std::cout << "Not valid input" << std::endl;
+		else if(commands[0] == "login")
+        {
+			if(commands.size() != 2)
+            {
+				std::cout << "Not valid input for login" << std::endl;
 				pass = false;
 			}
 			char pin[5];
@@ -92,26 +96,32 @@ int main(int argc, char* argv[])
 			//confirmation and authentication.
 			//if good, loggedIn = true;
 		}
-		else if(commands[0] == "balance"){
+		else if(commands[0] == "balance")
+        {
 
 		}
-		else if(commands[0] == "withdraw"){
-			if(commands.size() != 2){
-				std::cout << "Not valid input" << std::endl;
+		else if(commands[0] == "withdraw")
+        {
+			if(commands.size() != 2)
+            {
+				std::cout << "Not valid input for withdraw" << std::endl;
 				pass = false;
 			}
 
 
 		}
-		else if(commands[0] == "transfer"){
-			if(commands.size() != 3){
-				std::cout << "Not valid input" << std::endl;
+		else if(commands[0] == "transfer")
+        {
+			if(commands.size() != 3)
+            {
+				std::cout << "Not valid input transfer" << std::endl;
 				pass = false;
 			}
 
 		}
-		else{
-			std::cout << "Not valid input" << std::endl;
+		else
+        {
+			std::cout << "Unknown input" << std::endl;
 			pass = false;
 		}
 		//TODO: other commands
@@ -120,7 +130,8 @@ int main(int argc, char* argv[])
 
 		//send the packet through the proxy to the bank
 
-		if(pass){// && loggedIn){//if no error in input
+		if(pass)
+        {// && loggedIn){//if no error in input
 			//encrypt and pad packet. 
 
 			if(sizeof(int) != send(sock, &length, sizeof(int), 0))
