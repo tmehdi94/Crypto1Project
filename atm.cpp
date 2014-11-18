@@ -64,13 +64,11 @@ int main(int argc, char* argv[])
 		int i = 0;
 		while(token != NULL)
         {
-			
 			commands.push_back(std::string(token));
 			i++;
 			token = strtok(NULL," ");
 		}
 		//TODO: your input parsing code has to put data here
-		
 		
 		int length = 1;
 		
@@ -80,25 +78,31 @@ int main(int argc, char* argv[])
         {
 			break;
 		}
-		else if(commands[0] == "login")
+		else if(commands[0] == "login") // and not loggedIn
         {
 			if(commands.size() != 2)
             {
 				std::cout << "Not valid input for login" << std::endl;
 				pass = false;
 			}
-			char pin[5];
-			bzero(pin, strlen(pin));
-			std::cout << "Enter PIN: ";
-			fgets(pin, 5, stdin);
-			strcat(buf, " ");
-			strcat(buf, pin);
-			//confirmation and authentication.
-			//if good, loggedIn = true;
+            else
+            {
+                std::string pin;
+                std::cout << "Enter PIN: ";
+                std::cin >> pin;
+                strcat(buf, " ");
+                strcat(buf, pin.c_str());
+                //confirmation and authentication.
+                //if good, loggedIn = true;
+            }
 		}
 		else if(commands[0] == "balance")
         {
-
+			if(commands.size() != 1)
+            {
+				std::cout << "Not valid input for balance" << std::endl;
+				pass = false;
+			}
 		}
 		else if(commands[0] == "withdraw")
         {
@@ -107,8 +111,6 @@ int main(int argc, char* argv[])
 				std::cout << "Not valid input for withdraw" << std::endl;
 				pass = false;
 			}
-
-
 		}
 		else if(commands[0] == "transfer")
         {
@@ -117,11 +119,15 @@ int main(int argc, char* argv[])
 				std::cout << "Not valid input transfer" << std::endl;
 				pass = false;
 			}
-
 		}
 		else
         {
 			std::cout << "Unknown input" << std::endl;
+            for (unsigned int i = 0; i < commands.size(); i++)
+            {
+                std::cout << commands[i] << " ";
+            }
+            std::cout << std::endl;
 			pass = false;
 		}
 		//TODO: other commands
@@ -168,7 +174,7 @@ int main(int argc, char* argv[])
 			//decrypt and authenticate packet
 			std::cout << packet << std::endl;
 		}
-
+        std::cout << "hello\n";
 	}
 	
 	//cleanup
