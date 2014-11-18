@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 		commands.clear();
 
 		printf("atm> ");
-		fgets(buf, 80, stdin);
+		fgets(buf, 79, stdin);
 		buf[strlen(buf)-1] = '\0';	//trim off trailing newline
 		
 		char hold[strlen(buf)];
@@ -133,9 +133,10 @@ int main(int argc, char* argv[])
 
             //send the packet through the proxy to the bank
 
-            if(pass)
-            {// && loggedIn){//if no error in input
-                //encrypt and pad packet. 
+            if(pass)// && loggedIn)
+            {
+                //if no error in input encrypt and pad packet.
+
 
                 if(sizeof(int) != send(sock, &length, sizeof(int), 0))
                 {
@@ -172,7 +173,10 @@ int main(int argc, char* argv[])
                 std::cout << packet << std::endl;
             }
         }
-        std::cout << std::endl;
+        else
+        {
+            std::cout << std::endl;
+        }
     }
 	
 	//cleanup

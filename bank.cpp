@@ -309,37 +309,44 @@ void* client_thread(void* arg)
         }
         else if(commands[0] == "transfer")
         {
-            Account *other = NULL;
-            for(unsigned int i = 0; i < Accounts.size(); i++)
+            if (commands[2] != current->getName())
             {
-                if(Accounts[i].getName() == commands[2])
+                Account *other = NULL;
+                for(unsigned int i = 0; i < Accounts.size(); i++)
                 {
-                    other = &Accounts[i];
-                    break;
+                    if(Accounts[i].getName() == commands[2])
+                    {
+                        other = &Accounts[i];
+                        break;
+                    }
                 }
-            }
-            if(other == NULL)
-            {
-                //user account not found;
-                buffer = "User could not be found";
-            }
-            else
-            {
-                if (atoi(commands[1].c_str()) <= 0)
+                if(other == NULL)
                 {
-                    buffer = "Invalid amount";
+                    //user account not found;
+                    buffer = "User could not be found";
                 }
                 else
                 {
-                    if (current->transfer(atoi(commands[1].c_str()), other))
+                    if (atoi(commands[1].c_str()) <= 0)
                     {
-                        buffer = commands[1] + " Transferred to " + commands[2];
+                        buffer = "Invalid amount";
                     }
                     else
                     {
-                        buffer = "Insufficient funds";
+                        if (current->transfer(atoi(commands[1].c_str()), other))
+                        {
+                            buffer = commands[1] + " Transferred to " + commands[2];
+                        }
+                        else
+                        {
+                            buffer = "Insufficient funds";
+                        }
                     }
                 }
+            }
+            else
+            {
+                buffer = "Cant transfer to yourself";
             }
         }
         bzero(packet, strlen(packet));
