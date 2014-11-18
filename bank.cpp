@@ -353,21 +353,25 @@ void* client_thread(void* arg)
 void* console_thread(void* arg)
 {
     char buf[80];
+    std::vector<std::string> commands;
     while(1)
     {
+        bzero(buf,strlen(buf));
+        commands.clear();
+
         printf("bank> ");
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';	//trim off trailing newline
 
         //TODO: your input parsing code has to go here
-        std::vector<std::string> commands;
+
         char hold[strlen(buf)];
         strcpy(hold, buf);
         char * token = strtok(hold," ");
         int i = 0;
         while(token != NULL)
         {
-            commands[i] = token;
+            commands.push_back(std::string(token));
             i++;
             token = strtok(NULL," ");
         }
@@ -384,7 +388,11 @@ void* console_thread(void* arg)
                     break;
                 }
             }
-            if(current == NULL)
+            if(atoi(commands[2].c_str()) <= 0)
+            {
+                std::cout << "Invalid amount" << std::endl;
+            }
+            else if(current == NULL)
             {
                 printf("No account found\n");
             }
@@ -415,7 +423,7 @@ void* console_thread(void* arg)
         }
         else
         {
-            //not valid;
+            std::cout << "Command not valid" << std::endl;
         }
     }
 }
