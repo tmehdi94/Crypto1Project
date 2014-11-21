@@ -346,7 +346,7 @@ void* client_thread(void* arg)
             }
             else
             {
-                buffer = "Cant transfer to yourself";
+                buffer = "Can't transfer to yourself";
             }
         }
         bzero(packet, strlen(packet));
