@@ -1,0 +1,5 @@
+Requires libraries install :
+sudo apt-get install libcrypto++-dev libcrypto++-doc libcrypto++-utils
+
+How to compile :
+g++ file1.cpp file2.cpp -lcryptopp -static -L./cryptopp -o CryptoProject 
