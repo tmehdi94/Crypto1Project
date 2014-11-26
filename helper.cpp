@@ -33,10 +33,10 @@ void padCommand(string &command){
 	// from string for parsing
 	
 	//if (command.size() < 460){ //1022 because buildPacket() has two '\0's
-	if (command.size() < 1024){
+	if (command.size() < 1008){
 		command += "~";
 	}
-	while(command.size() < 1024){
+	while(command.size() < 1008){
 		command += "a";
 	}
 }
@@ -62,20 +62,20 @@ void unpadCommand(string &plaintext) {
 	return;
 }
 
-void encryptCommand(string& command, byte* key, byte* iv) {
+void encryptCommand(string& ciphertext, string& command, byte* key, byte* iv) {
 	CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
 
-    CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( command ) );
+    CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
     stfEncryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.length() + 1 );
     stfEncryptor.MessageEnd();
 }
 
-void decryptCommand(string& command, byte* key, byte* iv) {
+void decryptCommand(string& decipher, string& command, byte* key, byte* iv) {
 	CryptoPP::AES::Decryption aesDecryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption( aesDecryption, iv );
 
-    CryptoPP::StreamTransformationFilter stfDecryptor(cbcDecryption, new CryptoPP::StringSink( command ) );
+    CryptoPP::StreamTransformationFilter stfDecryptor(cbcDecryption, new CryptoPP::StringSink( decipher ) );
     stfDecryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.size() );
     stfDecryptor.MessageEnd();
 }
@@ -88,23 +88,26 @@ int main() {
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
 
 	string str = "hello there!!!!!!!!!!!!!!!!";
-	
-	char packet[1024];
+	string ciphertext;
+	string decipher;
+
+	//char packet[1024];
 	padCommand(str);
-	cout << str;
+	cout << str << " " << str.size() << endl;
 	
+	/*
 	if(str.size() <= 1022) {
 		strcpy(packet, (str+'\0').c_str());
-		packet[str.size()] = '\0';
-	}
+		packet[str.size()-1] = '\0';
+	}*/
 	
 	//cout << str << endl;
-	encryptCommand(str, key, iv);
-	cout << str << " " << str.size() << endl;
-	decryptCommand(str, key, iv);
-	cout << str << " " << str.size() << endl;
-	unpadCommand(str);
-	cout << str << endl;
+	encryptCommand(ciphertext, str, key, iv);
+	cout <<"encryption: " <<  ciphertext << " " << ciphertext.size() << endl;
+	decryptCommand(decipher, ciphertext, key, iv);
+	cout <<"decryption: " << decipher << " " << decipher.size() << endl;
+	unpadCommand(decipher);
+	cout << decipher << endl;
 }
 
 
