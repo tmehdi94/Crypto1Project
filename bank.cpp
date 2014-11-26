@@ -22,14 +22,14 @@ void* console_thread(void* arg);
 class Account
 {
     public:
-        Account(std::string, int, int);
+        Account(std::string, int, std::string);
         Account();
         Account & operator= (const Account & a);
         std::string getName();
         int getBalance();
         void setBalance(int b);
-        int getPin();
-        void setPin(int p);
+        std::string getPin();
+        void setPin(std::string p);
         bool withdraw(int amount);
         bool deposit(int amount);
         bool transfer(int amount, Account *other);
