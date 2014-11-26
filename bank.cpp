@@ -37,11 +37,11 @@ class Account
     private:
         std::string name;
         int balance;
-        int pin;
+        std::string pinhash;
         pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 };
 
-Account::Account (std::string n, int m, int p)
+Account::Account (std::string n, int m, std::string p)
 {
     balance = m;
     name = n;
@@ -52,7 +52,7 @@ Account::Account ()
 {
     balance = 0;
     name = "";
-    pin = 0000;
+    std::string  = "0000";
 }
 
 Account &Account::operator= (const Account & a)
@@ -85,7 +85,7 @@ int Account::getPin()
     return pin;
 }
 
-void Account::setPin(int p)
+void Account::setPin(std::string p)
 {
     pin = p;
 }
@@ -158,9 +158,9 @@ std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
-    Account a("Alice", 100, 1234);
-    Account b("Bob", 50, 1234);
-    Account e("Eve", 0 , 1234);
+    Account a("Alice", 100, "1234");
+    Account b("Bob", 50, "1234");
+    Account e("Eve", 0 , "1234");
     Accounts.push_back(a);
     Accounts.push_back(b);
     Accounts.push_back(e);
@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
         sockaddr_in unused;
         socklen_t size = sizeof(unused);
         int csock = accept(lsock, reinterpret_cast<sockaddr*>(&unused), &size);
-        if(csock < 0)	//bad client, skip it
+        if(csock < 0)   //bad client, skip it
             continue;
 
         pthread_t thread;
@@ -387,7 +387,7 @@ void* console_thread(void* arg)
 
         printf("bank> ");
         fgets(buf, 79, stdin);
-        buf[strlen(buf)-1] = '\0';	//trim off trailing newline
+        buf[strlen(buf)-1] = '\0';  //trim off trailing newline
 
         //TODO: your input parsing code has to go here
 
