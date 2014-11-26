@@ -8,6 +8,8 @@
 #include "crypto++/integer.h"
 #include "crypto++/rsa.h"
 #include "crypto++/osrng.h"
+#include "crypto++/sha.h"
+#include "crypto++/hex.h"
 
 using namespace std;
 
@@ -83,8 +85,23 @@ void decryptCommand(string& decipher, string& command, byte* key, byte* iv) {
     stfDecryptor.MessageEnd();
 }
 
+std::string createHash(const std::string& input) {
+	CryptoPP::SHA512 hash;
+	byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
+	//input.resize(CryptoPP::SHA512::DIGESTSIZE);
+	hash.CalculateDigest( digest, (byte*) input.c_str(), input.length() );
+	CryptoPP::HexEncoder encoder;
+	std::string output;
+	encoder.Attach( new CryptoPP::StringSink( output ) );
+	encoder.Put( digest, sizeof(digest) );
+	encoder.MessageEnd();
+	return output;
+}
+
 int main() {
 	srand (time(NULL));
+
+	const string APPSALT = "THISISAFUCKINGDOPESALT";
 
 	byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
@@ -152,6 +169,23 @@ int main() {
 
 	cout << "recovered: " << recovered << endl;	
 
+	// simulate log in
+	// in the actual thing, we will store and compare the hashes
+	string user = "Alice";
+	string pin = "1234";
+	string hash = createHash(user+pin+APPSALT); // <-- this is what gets stored
+
+	cout << "hash stored: " << hash << endl;
+
+	pin = "1111";
+
+	string tryhash = createHash(user+pin+APPSALT);
+	if (tryhash == hash) {
+		cout << "ayy you're logged in" << endl;
+	}
+	else {
+		cout << "log in failed" << endl;
+	}
 }
 
 
