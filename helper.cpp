@@ -133,7 +133,7 @@ int main() {
 	CryptoPP::AutoSeededRandomPool prng;
 	CryptoPP::RSA::PrivateKey privKey;
 
-	privKey.GenerateRandomWithKeySize(prng, 64);
+	privKey.GenerateRandomWithKeySize(prng, 1024);
 	CryptoPP::RSA::PublicKey pubKey(privKey);
 	/*CryptoPP::Integer n("0xbeaadb3d839f3b5f"), e("0x11"), d("0x21a5ae37b9959db9");
 
