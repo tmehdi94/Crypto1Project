@@ -114,17 +114,17 @@ int main() {
 
 
 	CryptoPP::AutoSeededRandomPool prng;
-	//CryptoPP::RSA::PrivateKey privKey;
+	CryptoPP::RSA::PrivateKey privKey;
 
-	//privKey.GenerateRandomWithKeySize(prng, 64);
-	//CryptoPP::RSA::PublicKey pubKey(privKey);
-	CryptoPP::Integer n("0xbeaadb3d839f3b5f"), e("0x11"), d("0x21a5ae37b9959db9");
+	privKey.GenerateRandomWithKeySize(prng, 64);
+	CryptoPP::RSA::PublicKey pubKey(privKey);
+	/*CryptoPP::Integer n("0xbeaadb3d839f3b5f"), e("0x11"), d("0x21a5ae37b9959db9");
 
 	CryptoPP::RSA::PrivateKey privKey;
 	privKey.Initialize(n, e, d);
 
 	CryptoPP::RSA::PublicKey pubKey;
-	pubKey.Initialize(n, e);
+	pubKey.Initialize(n, e);*/
 
 	//if(!privKey.Validate(rnd, 3))
     //	throw runtime_error("Rsa private key validation failed");
