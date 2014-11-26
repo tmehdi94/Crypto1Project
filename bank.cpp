@@ -45,7 +45,7 @@ Account::Account (std::string n, int m, std::string p)
 {
     balance = m;
     name = n;
-    pin = p;
+    pinhash = p;
 }
 
 Account::Account ()
@@ -60,7 +60,7 @@ Account &Account::operator= (const Account & a)
     if (this != &a){
         this->name = a.name;
         this->balance = a.balance;
-        this->pin = a.pin;
+        this->pinhash = a.pinhash;
     }
     return *this;
 }
@@ -82,12 +82,12 @@ void Account::setBalance(int b)
 
 int Account::getPin()
 {
-    return pin;
+    return pinhash;
 }
 
 void Account::setPin(std::string p)
 {
-    pin = p;
+    pinhash = p;
 }
 
 bool Account::withdraw(int amount)
