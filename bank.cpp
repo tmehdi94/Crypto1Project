@@ -38,6 +38,8 @@ class Account
         std::string name;
         int balance;
         std::string pinhash;
+        int loginattempts;
+        bool loggedin;
         pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 };
 
@@ -88,6 +90,12 @@ int Account::getPin()
 void Account::setPin(std::string p)
 {
     pinhash = p;
+}
+
+bool Account::tryLogin(std::string ) {
+    // pthread_mutex_lock(&lock); <-- do we need this
+    bool status = false;
+
 }
 
 bool Account::withdraw(int amount)
