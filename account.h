@@ -72,12 +72,6 @@ void encryptAccount(std::string& ciphertext, std::string& account_info, byte* ke
     CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
     stfEncryptor.Put( reinterpret_cast<const unsigned char*>( account_info.c_str() ), account_info.length() + 1 );
     stfEncryptor.MessageEnd();
-
-    std::string encodedCipher;
-    CryptoPP::StringSource(ciphertext, true,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
-    );
-    ciphertext = encodedCipher;
 }
 
 void decryptAccount(std::string& decipher, std::string& account_info, byte* key, byte* iv) {
