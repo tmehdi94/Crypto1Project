@@ -78,11 +78,7 @@ void encryptCommand(std::string& ciphertext, std::string& command, byte* key, by
     stfEncryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.length() + 1 );
     stfEncryptor.MessageEnd();
 
-    std::string encodedCipher;
-    CryptoPP::StringSource(ciphertext, true,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
-    );
-    ciphertext = encodedCipher;
+
 }
 
 void decryptCommand(std::string& decipher, std::string& command, byte* key, byte* iv) {
@@ -108,6 +104,11 @@ std::string createPacket(std::string input){
     padCommand(input);
     std::cout << input << std::endl;
     encryptCommand(ciphertext, input, key, iv);
+    std::string encodedCipher;
+    CryptoPP::StringSource(ciphertext, true,
+        new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
+    );
+    ciphertext = encodedCipher;
     return ciphertext;
 }
 
