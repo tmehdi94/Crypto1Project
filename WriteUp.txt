@@ -21,4 +21,5 @@ Can convert to word/pdf later.
         Negative transfer/deposit commands are not allowed.
 
     ATM Login Protection:
+	On account creation a card is generated for the particular account; this involves creation of a card hash. The card hash, the pin, and the appwide salt is used to generate an overall account hash for the account which is used to check for authentication. Accounts are allowed 3 login attempts before getting locked out.
         

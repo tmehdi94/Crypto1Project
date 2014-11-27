@@ -354,8 +354,8 @@ void* client_thread(void* arg)
                 }
                 if(current == NULL)
                 {
-                    //login and pin dont match
-                    buffer = "Username/PIN/card don't match";
+                    //login and pin dont match, or other error
+                    buffer = "Login error";
                 }
 
             }
