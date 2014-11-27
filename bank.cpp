@@ -138,10 +138,15 @@ int main(int argc, char* argv[])
     if (account_data)
     {
         std::string line;
+        byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+        memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+        memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
 
         while(getline(account_data, line))
         {
-            std::istringstream iss(line);
+            std::string plaintext;
+            decryptAccount(plaintext, line, key, iv);
+            std::istringstream iss(plaintext);
 
             std::string info_name;
             int info_amount;

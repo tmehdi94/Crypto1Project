@@ -33,6 +33,7 @@ std::string createHash(const std::string& input) {
     return output;
 }
 
+
 class Account
 {
     public:
@@ -63,6 +64,30 @@ class Account
         bool loggedin;
         pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 };
+
+void encryptAccount(std::string& ciphertext, std::string& account_info, byte* key, byte* iv) {
+    CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
+
+    CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
+    stfEncryptor.Put( reinterpret_cast<const unsigned char*>( account_info.c_str() ), account_info.length() + 1 );
+    stfEncryptor.MessageEnd();
+
+    std::string encodedCipher;
+    CryptoPP::StringSource(ciphertext, true,
+        new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
+    );
+    ciphertext = encodedCipher;
+}
+
+void decryptAccount(std::string& decipher, std::string& account_info, byte* key, byte* iv) {
+    CryptoPP::AES::Decryption aesDecryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption( aesDecryption, iv );
+
+    CryptoPP::StreamTransformationFilter stfDecryptor(cbcDecryption, new CryptoPP::StringSink( decipher ) );
+    stfDecryptor.Put( reinterpret_cast<const unsigned char*>( account_info.c_str() ), account_info.size() );
+    stfDecryptor.MessageEnd();
+}
 
 Account::Account ()
 {
@@ -243,6 +268,10 @@ bool Account::transfer(int amount, Account *other)
 
 std::string Account::getFileInfo()
 {
+    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    
     std::stringstream ss;
     ss << balance;
 
@@ -250,5 +279,8 @@ std::string Account::getFileInfo()
     ss >> temp;
 
     temp = name + " " + temp;
-    return temp;
+
+    std::string ciphertext;
+    encryptAccount(ciphertext, temp, key, iv);
+    return ciphertext;
 }
