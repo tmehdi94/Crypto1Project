@@ -1,37 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 
-std::string randomString(const unsigned int len) {
-
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-        
-    std::string s = "";
-    
-    //When adding each letter, generate a new word32,
-    //then compute it modulo alphanum's size - 1
-    
-    for(unsigned int i = 0; i < len; ++i) {
-        s += alphanum[rand() % (sizeof(alphanum) - 1)];
-    } 
-    return s;
-}
-std::string createHash(const std::string& input) {
-    CryptoPP::SHA512 hash;
-    byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
-    //input.resize(CryptoPP::SHA512::DIGESTSIZE);
-    hash.CalculateDigest( digest, (byte*) input.c_str(), input.length() );
-    CryptoPP::HexEncoder encoder;
-    std::string output;
-    encoder.Attach( new CryptoPP::StringSink( output ) );
-    encoder.Put( digest, sizeof(digest) );
-    encoder.MessageEnd();
-    return output;
-}
-
+#include "helperFunctions.cpp"
 class Account
 {
     public:
@@ -48,6 +20,7 @@ class Account
         bool withdraw(int amount);
         bool deposit(int amount);
         bool transfer(int amount, Account *other);
+        bool updateData(const int balance);
 
     private:
         //int accountnum;
@@ -83,6 +56,33 @@ Account &Account::operator= (const Account & a)
     return *this;
 }
 
+bool Account::updateData(const int balance) {
+    std::stringstream s;
+    s << balance;
+    std::string data = s.str();
+    std::string ciphertext, plaintext;
+
+    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    padCommand(data);
+    //std::cout << output << std::endl;
+    //ciphertext = output;
+    encryptCommand(ciphertext, data, key, iv);
+    std::string dataFilename = "data/" + this->name + ".data";
+    std::ofstream outfile(dataFilename.c_str());
+    if(outfile.is_open()) {
+        outfile << ciphertext << "\n";
+        decryptCommand(plaintext, ciphertext, key, iv);
+        unpadCommand(plaintext);
+        outfile << plaintext << "\n";
+    }
+    else {
+        return false;
+    }
+    return true;
+    
+}
 
 bool Account::makeAccount(const std::string& n, const std::string& p, const std::string& APPSALT)
 {
@@ -96,6 +96,7 @@ bool Account::makeAccount(const std::string& n, const std::string& p, const std:
     this->salt = createHash(randomString(128));
     this->card = createHash(this->salt + n);
     std::string cardFilename = "cards/" + n + ".card";
+    std::string dataFilename = "data/" + n + ".data";
     std::ofstream outfile(cardFilename.c_str());
     if(outfile.is_open()) {
         outfile << this->card;
@@ -105,7 +106,16 @@ bool Account::makeAccount(const std::string& n, const std::string& p, const std:
         return false;
     }
     outfile.close();
-    
+
+    std::ofstream outfile2(dataFilename.c_str());
+    if(outfile2.is_open()) {
+        outfile2 << this->balance;
+    }
+    else {
+        return false;
+    }
+    outfile2.close();
+
     if(!setHash(p, APPSALT)) {
         return false;
     }
@@ -183,6 +193,7 @@ bool Account::withdraw(int amount)
     if(balance >= amount)
     {
         balance -= amount;
+        updateData(balance);
         status = true;
     }
     else
@@ -207,6 +218,7 @@ bool Account::deposit(int amount)
         else
         {
             balance = temp_balance;
+            updateData(balance);
             status = true;
         }
     }
