@@ -21,6 +21,7 @@ class Account
         int balance;
         std::string hash;
         int loginattempts;
+        bool lockedout;
         bool loggedin;
         pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 };
@@ -33,6 +34,7 @@ Account::Account ()
     hash  = "0000";
     loginattempts = 0;
     loggedin = false;
+    lockedout = false;
 }
 
 Account &Account::operator= (const Account & a)
@@ -50,7 +52,7 @@ bool makeAccount(const std::string& n, const std::string& p, const std::string& 
 {
 
     if (n == "") {
-        account must have name
+        //account must have name
         return false;
     }
     this->name = n;
@@ -71,6 +73,8 @@ bool makeAccount(const std::string& n, const std::string& p, const std::string& 
     if(!setHash(p, APPSALT)) {
         return false;
     }
+    this->loginattempts = 3;
+    this->lockedout = false;
     return true;
 }
 
@@ -87,6 +91,27 @@ bool Account::setHash(const std::string& p, const std::string& APPSALT)
     return true;
 }
 
+bool Account::tryLogin(const std::string& p, const std::string& APPSALT) {
+    if(this->loggedin || this->lockedout ) {
+        return false;
+    }
+    std::string tryHash = makeHash(this->card + pin + APPSALT);
+    if(this->hash == tryHash) {
+        this->loggedin = true;
+        return true;
+    }
+    else {
+        if (loginattempts != 0) {
+            // still has remaining accounts
+            loginattempts--;
+        }
+        else {
+            this->lockedout = true;
+        }
+        return false;
+    }
+    return false;
+}
 
 std::string Account::getName()
 {
