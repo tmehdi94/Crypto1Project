@@ -26,6 +26,8 @@
 
 #include "account.h"
 
+      const std::string APPSALT = "THISISAFUCKINGDOPESALT";
+
 void* client_thread(void* arg);
 void* console_thread(void* arg);
 
@@ -64,6 +66,7 @@ void unpadCommand(std::string &plaintext) {
     }
     return;
 }
+
 
 void encryptCommand(std::string& ciphertext, std::string& command, byte* key, byte* iv) {
     CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
@@ -105,7 +108,7 @@ std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
-    const std::string APPSALT = "THISISAFUCKINGDOPESALT";
+
 
     Account acc;
     
@@ -239,94 +242,103 @@ void* client_thread(void* arg)
         std::string buffer;
         //expected input: login    user,card&passhash,checksum
         //                  0        1         2          3
-        if(commands[0] == "login")
-        {
-            for(int i = 0; i < Accounts.size(); i++)
+        std::string input = text.substr(0, text.find_last_of(' '));
+        std::string checksum = createHash(input + APPSALT);
+        if(checksum == commands[3]){
+            if(commands[0] == "login")
             {
-                if(commands[1] == Accounts[i].getName())
+                for(int i = 0; i < Accounts.size(); i++)
                 {
-                    // this needs to be changed to compare the hashes
-                    //if(commands[2] == Accounts[i].getPin())
-                    if(Accounts[i].tryLogin(commands[2]))
+                    if(commands[1] == Accounts[i].getName())
                     {
-                        buffer = "Logged in";
-                        current = &Accounts[i];
-                        break;
+                        // this needs to be changed to compare the hashes
+                        //if(commands[2] == Accounts[i].getPin())
+                        if(Accounts[i].tryLogin(commands[2]))
+                        {
+                            buffer = "Logged in";
+                            current = &Accounts[i];
+                            break;
+                        }
                     }
                 }
-            }
-            if(current == NULL)
-            {
-                //login and pin dont match
-                buffer = "Username/PIN/card don't match";
-            }
+                if(current == NULL)
+                {
+                    //login and pin dont match
+                    buffer = "Username/PIN/card don't match";
+                }
 
-        }
-        else if(commands[0] == "balance")
-        {
-            std::stringstream s;
-            s << current->getBalance();
-            buffer = s.str();
-        }
-        else if(commands[0] == "withdraw")
-        {   
-            if (atoi(commands[1].c_str()) <= 0)
-            {
-                buffer = "Invalid amount";
             }
-            else if (current->withdraw(atoi(commands[1].c_str())))
+            else if(commands[0] == "balance")
             {
-                buffer = commands[1] + " withdrawn";
+                std::stringstream s;
+                s << current->getBalance();
+                buffer = s.str();
             }
-            else{
-                buffer = "Insufficient funds";
-            }
-        }
-        else if(commands[0] == "transfer")
-        {
-            if (commands[2] != current->getName())
-            {
-                Account *other = NULL;
-                for(unsigned int i = 0; i < Accounts.size(); i++)
+            else if(commands[0] == "withdraw")
+            {   
+                if (atoi(commands[1].c_str()) <= 0)
                 {
-                    if(Accounts[i].getName() == commands[2])
+                    buffer = "Invalid amount";
+                }
+                else if (current->withdraw(atoi(commands[1].c_str())))
+                {
+                    buffer = commands[1] + " withdrawn";
+                }
+                else{
+                    buffer = "Insufficient funds";
+                }
+            }
+            else if(commands[0] == "transfer")
+            {
+                if (commands[2] != current->getName())
+                {
+                    Account *other = NULL;
+                    for(unsigned int i = 0; i < Accounts.size(); i++)
                     {
-                        other = &Accounts[i];
-                        break;
+                        if(Accounts[i].getName() == commands[2])
+                        {
+                            other = &Accounts[i];
+                            break;
+                        }
                     }
-                }
-                if(other == NULL)
-                {
-                    //user account not found;
-                    buffer = "User could not be found";
-                }
-                else
-                {
-                    if (atoi(commands[1].c_str()) <= 0)
+                    if(other == NULL)
                     {
-                        buffer = "Invalid amount";
+                        //user account not found;
+                        buffer = "User could not be found";
                     }
                     else
                     {
-                        if (current->transfer(atoi(commands[1].c_str()), other))
+                        if (atoi(commands[1].c_str()) <= 0)
                         {
-                            buffer = commands[1] + " Transferred to " + commands[2];
+                            buffer = "Invalid amount";
                         }
                         else
                         {
-                            buffer = "Insufficient funds";
+                            if (current->transfer(atoi(commands[1].c_str()), other))
+                            {
+                                buffer = commands[1] + " Transferred to " + commands[2];
+                            }
+                            else
+                            {
+                                buffer = "Insufficient funds";
+                            }
                         }
                     }
+                }
+                else
+                {
+                    buffer = "Can't transfer to yourself";
                 }
             }
             else
             {
-                buffer = "Can't transfer to yourself";
+                buffer = "Shit is Fucked";
             }
         }
         else
         {
-            buffer = "Shit is Fucked";
+            printf("Tampering with packet\n");
+            break;
         }
         bzero(packet, strlen(packet));
         
