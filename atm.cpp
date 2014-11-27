@@ -166,6 +166,7 @@ void decryptPacket(std::string& packet){
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
     decryptCommand(plaintext, ciphertext, key, iv);
+    std::cout << plaintext << std::endl;
     unpadCommand(plaintext);
     packet = plaintext;
 }
@@ -406,14 +407,15 @@ int main(int argc, char* argv[])
                 std::string plaintext = std::string(packet);
                 decryptPacket(plaintext);
                 std::string input = plaintext.substr(0, plaintext.find_last_of(' '));
-                std::string hash = plaintext.substr(plaintext.find_last_of(' '));
+                std::string hash = plaintext.substr(plaintext.find_last_of(' ') + 1);
                 std::string checksum = createHash(input + appSalt);
+                std::cout << checksum << std::endl << hash << std::endl;
                 if(checksum != hash){
                     printf("Hackers!!!\n");
                     break;
                 }
                 //decrypt and authenticate packet
-                std::cout << plaintext << std::endl;
+                std::cout << input << std::endl;
                 //std::cout << packet << std::endl;
             }
         }
