@@ -54,7 +54,7 @@ Account::Account ()
 {
     balance = 0;
     name = "";
-    std::string  = "0000";
+    pinhash  = "0000";
 }
 
 Account &Account::operator= (const Account & a)
@@ -82,7 +82,7 @@ void Account::setBalance(int b)
     balance = b;
 }
 
-int Account::getPin()
+std::string Account::getPin()
 {
     return pinhash;
 }
@@ -92,11 +92,12 @@ void Account::setPin(std::string p)
     pinhash = p;
 }
 
-bool Account::tryLogin(std::string ) {
+/*
+bool Account::tryLogin(std::string l) {
     // pthread_mutex_lock(&lock); <-- do we need this
     bool status = false;
 
-}
+}*/
 
 bool Account::withdraw(int amount)
 {
@@ -280,7 +281,7 @@ void* client_thread(void* arg)
             {
                 if(commands[1] == Accounts[i].getName())
                 {
-                    if(atoi(commands[2].c_str()) == Accounts[i].getPin())
+                    if(commands[2] == Accounts[i].getPin())
                     {
                         buffer = "Logged in";
                         current = &Accounts[i];
