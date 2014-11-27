@@ -150,6 +150,23 @@ void decryptCommand(std::string& decipher, std::string& command, byte* key, byte
     stfDecryptor.MessageEnd();
 }
 
+void decryptPacket(std::string& packet){
+    std::cout << packet.size() << std::endl;
+    std::string ciphertext;
+
+    CryptoPP::StringSource(packet, true,
+        new CryptoPP::HexDecoder(new CryptoPP::StringSink(ciphertext)) // HexEncoder
+    );
+    std::string plaintext;
+
+    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    decryptCommand(plaintext, ciphertext, key, iv);
+    unpadCommand(plaintext);
+    packet = plaintext;
+}
+
 std::string createHash(const std::string& input) {
     CryptoPP::SHA512 hash;
     byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
@@ -382,8 +399,11 @@ int main(int argc, char* argv[])
                     printf("fail to read packet\n");
                     break;
                 }
-
+                /*
+                std::string plaintext = std::string(packet);
+                decryptPacket(plaintext);
                 //decrypt and authenticate packet
+                std::cout << plaintext << std::endl;*/
                 std::cout << packet << std::endl;
             }
         }

@@ -86,6 +86,23 @@ void decryptCommand(std::string& decipher, std::string& command, byte* key, byte
     stfDecryptor.MessageEnd();
 }
 
+std::string createPacket(std::string input){
+    std::string hash = createHash(input + APPSALT);
+    input = input + " " + hash;
+
+    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    std::string ciphertext;
+    printf("%s\n", key);
+    //string decipher;
+
+    padCommand(input);
+    std::cout << input << std::endl;
+    encryptCommand(ciphertext, input, key, iv);
+    return ciphertext;
+}
+
 void decryptPacket(std::string& packet){
     std::string ciphertext;
 
@@ -244,7 +261,7 @@ void* client_thread(void* arg)
         //                  0        1         2          3
         std::string input = text.substr(0, text.find_last_of(' '));
         std::string checksum = createHash(input + APPSALT);
-        if(checksum == commands[3]){
+        if(checksum == commands[commands.size()-1]){
             if(commands[0] == "login")
             {
                 for(int i = 0; i < Accounts.size(); i++)
@@ -342,8 +359,10 @@ void* client_thread(void* arg)
         }
         bzero(packet, strlen(packet));
         
-        strcat(packet, buffer.c_str());
+        std::string ciphertext = createPacket(buffer);
+        strcat(packet, ciphertext.c_str());
         length = strlen(packet);
+        std::cout << ciphertext.size() << std::endl;
         //encrypt
         //TODO: put new data in packet
 
