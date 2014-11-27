@@ -162,24 +162,25 @@ int main(int argc, char* argv[])
     }
     else
     {
-        Account acc;
-
+        Account accAlice;
         std::string name = "Alice";
         std::string pin = "1234";
-        acc.makeAccount(name, pin, APPSALT );
-        acc.deposit(100);
-        Accounts.push_back(acc);
+        accAlice.makeAccount(name, pin, APPSALT );
+        accAlice.deposit(100);
+        Accounts.push_back(accAlice);
 
+        Account accBob;
         name = "Bob";
         pin = "1234";
-        acc.makeAccount(name, pin, APPSALT );
-        acc.deposit(50);
-        Accounts.push_back(acc);
+        accBob.makeAccount(name, pin, APPSALT );
+        accBob.deposit(50);
+        Accounts.push_back(accBob);
 
+        Account accEve;
         name = "Eve";
         pin = "1234";
-        acc.makeAccount(name, pin, APPSALT );
-        Accounts.push_back(acc);
+        accEve.makeAccount(name, pin, APPSALT );
+        Accounts.push_back(accEve);
     }
 
     if(argc != 2)
