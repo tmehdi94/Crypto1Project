@@ -95,6 +95,8 @@ void decryptPacket(std::string& packet){
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
     decryptCommand(plaintext, ciphertext, key, iv);
+    unpadCommand(plaintext);
+    packet = plaintext;
 }
 
 
@@ -235,10 +237,9 @@ void* client_thread(void* arg)
             token = strtok(NULL," ");
         }
         std::string buffer;
-
+        //expected input: login    user,card&passhash,checksum
+        //                  0        1         2          3
         if(commands[0] == "login")
-            //expected input: login   user,cardhash,passhash
-            //                  0      1        2      3
         {
             for(int i = 0; i < Accounts.size(); i++)
             {
@@ -246,10 +247,7 @@ void* client_thread(void* arg)
                 {
                     // this needs to be changed to compare the hashes
                     //if(commands[2] == Accounts[i].getPin())
-                    if(!Accounts[i].validCard(commands[2])) {
-                        buffer = "Invalid card";
-                    }
-                    if(Accounts[i].tryLogin(commands[3]))
+                    if(Accounts[i].tryLogin(commands[2]))
                     {
                         buffer = "Logged in";
                         current = &Accounts[i];
@@ -260,7 +258,7 @@ void* client_thread(void* arg)
             if(current == NULL)
             {
                 //login and pin dont match
-                buffer = "Username and PIN don't match";
+                buffer = "Username/PIN/card don't match";
             }
 
         }
