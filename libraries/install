@@ -1,3 +1,11 @@
+This error
+fatal error: sys/cdefs.h: No such file or directory
+ #  include <sys/cdefs.h>
+
+Requires: To compile 32 bit in 64 bit
+sudo apt-get install libx32gcc-4.8-dev
+sudo apt-get install libc6-dev-i386
+
 Requires libraries install :
 sudo apt-get install libcrypto++-dev libcrypto++-doc libcrypto++-utils
 

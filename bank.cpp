@@ -30,25 +30,6 @@ void* client_thread(void* arg);
 void* console_thread(void* arg);
 
 
-
-std::string randomString(const unsigned int len) {
-
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-        
-    std::string s = "";
-    
-    //When adding each letter, generate a new word32,
-    //then compute it modulo alphanum's size - 1
-    
-    for(unsigned int i = 0; i < len; ++i) {
-        s += alphanum[rand() % (sizeof(alphanum) - 1)];
-    } 
-    return s;
-}
-
 void padCommand(std::string &command){
     
     // pad end of packet with '~' then 'a's to separate command
@@ -100,19 +81,6 @@ void decryptCommand(std::string& decipher, std::string& command, byte* key, byte
     CryptoPP::StreamTransformationFilter stfDecryptor(cbcDecryption, new CryptoPP::StringSink( decipher ) );
     stfDecryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.size() );
     stfDecryptor.MessageEnd();
-}
-
-std::string createHash(const std::string& input) {
-    CryptoPP::SHA512 hash;
-    byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
-    //input.resize(CryptoPP::SHA512::DIGESTSIZE);
-    hash.CalculateDigest( digest, (byte*) input.c_str(), input.length() );
-    CryptoPP::HexEncoder encoder;
-    std::string output;
-    encoder.Attach( new CryptoPP::StringSink( output ) );
-    encoder.Put( digest, sizeof(digest) );
-    encoder.MessageEnd();
-    return output;
 }
 
 void decryptPacket(std::string& packet){
@@ -276,7 +244,7 @@ void* client_thread(void* arg)
                 {
                     // this needs to be changed to compare the hashes
                     //if(commands[2] == Accounts[i].getPin())
-                    if(Accounts[i].tryLogin())
+                    if(Accounts[i].tryLogin(commands[2]))
                     {
                         buffer = "Logged in";
                         current = &Accounts[i];
