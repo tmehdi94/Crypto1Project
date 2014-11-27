@@ -24,7 +24,7 @@
 #include "crypto++/sha.h"
 #include "crypto++/hex.h"
 
-#include "account.cpp"
+#include "account.h"
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
@@ -132,22 +132,25 @@ std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
-    const string APPSALT = "THISISAFUCKINGDOPESALT";
+    const std::string APPSALT = "THISISAFUCKINGDOPESALT";
 
-    Account acc = new Account();
+    Account acc;
     
-    string name = "Alice", pin = "1234";
-    acc->makeAccount(name, pin, APPSALT );
-    acc->deposit(100);
+    std::string name = "Alice";
+    std::string pin = "1234";
+    acc.makeAccount(name, pin, APPSALT );
+    acc.deposit(100);
     Accounts.push_back(acc);
 
-    name = "Bob", pin = "1234";
-    acc->makeAccount(name, pin, APPSALT );
-    acc->deposit(50);
+    name = "Bob";
+    pin = "1234";
+    acc.makeAccount(name, pin, APPSALT );
+    acc.deposit(50);
     Accounts.push_back(acc);
 
-    name = "Eve", pin = "1234";
-    acc->makeAccount(name, pin, APPSALT );
+    name = "Eve";
+    pin = "1234";
+    acc.makeAccount(name, pin, APPSALT );
     Accounts.push_back(acc);
 
     /*
