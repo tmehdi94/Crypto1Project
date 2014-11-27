@@ -12,6 +12,124 @@
 #include <string.h>
 #include <iostream>
 #include <vector>
+#include "crypto++/modes.h"
+#include "crypto++/aes.h"
+#include "crypto++/filters.h"
+#include "crypto++/integer.h"
+#include "crypto++/rsa.h"
+#include "crypto++/osrng.h"
+#include "crypto++/sha.h"
+#include "crypto++/hex.h"
+
+std::string randomString(const unsigned int len) {
+
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        
+    std::string s = "";
+    
+    //When adding each letter, generate a new word32,
+    //then compute it modulo alphanum's size - 1
+    
+    for(unsigned int i = 0; i < len; ++i) {
+        s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    } 
+    return s;
+}
+
+void padCommand(std::string &command){
+    
+    // pad end of packet with '~' then 'a's to separate command
+    // from string for parsing
+    
+    //if (command.size() < 460){ //1022 because buildPacket() has two '\0's
+    if (command.size() < 1006){
+        command += "~";
+    }
+    while(command.size() < 1006){
+        command += "a";
+    }
+}
+
+void unpadCommand(std::string &plaintext) {
+    // find index of ~ and truncate string
+    bool positionFound = false;
+    int position = -1;
+    for(unsigned int i = 0; i < plaintext.size(); ++i) {
+        if(plaintext[i] == '~') {
+            positionFound = true;
+            position = i;
+            break;
+        }
+    }
+
+    if(position > 0 && positionFound) {
+        plaintext = plaintext.substr(0,position);
+    }
+    else {
+        // that was some bad input
+    }
+    return;
+}
+
+void encryptCommand(std::string& ciphertext, std::string& command, byte* key, byte* iv) {
+    CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
+
+    CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
+    stfEncryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.length() + 1 );
+    stfEncryptor.MessageEnd();
+}
+
+void decryptCommand(std::string& decipher, std::string& command, byte* key, byte* iv) {
+    CryptoPP::AES::Decryption aesDecryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption( aesDecryption, iv );
+
+    CryptoPP::StreamTransformationFilter stfDecryptor(cbcDecryption, new CryptoPP::StringSink( decipher ) );
+    stfDecryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.size() );
+    stfDecryptor.MessageEnd();
+}
+
+std::string createHash(const std::string& input) {
+    CryptoPP::SHA512 hash;
+    byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
+    //input.resize(CryptoPP::SHA512::DIGESTSIZE);
+    hash.CalculateDigest( digest, (byte*) input.c_str(), input.length() );
+    CryptoPP::HexEncoder encoder;
+    std::string output;
+    encoder.Attach( new CryptoPP::StringSink( output ) );
+    encoder.Put( digest, sizeof(digest) );
+    encoder.MessageEnd();
+    return output;
+}
+
+
+std::string createPacket(std::string input){
+    const std::string APPSALT = "THISISAFUCKINGDOPESALT";
+    std::string hash = createHash(input + APPSALT);
+    std::string output = input + " " + hash;
+
+    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    std::string ciphertext;
+    printf("%s\n", key);
+    //string decipher;
+
+    padCommand(output);
+    //ciphertext = output;
+    encryptCommand(ciphertext, output, key, iv);
+    //std::cout <<"encryption: " <<  ciphertext << " " << ciphertext.size() << std::endl;
+    //std::cout << ciphertext.size() << std::endl;
+    return ciphertext;
+
+}
+
+
+
+
 
 int main(int argc, char* argv[])
 {
@@ -157,15 +275,18 @@ int main(int argc, char* argv[])
                 pass = false;
             }
             //TODO: other commands
-            strcpy(packet, buf);
-            length = strlen(buf);
+            //strcpy(packet, buf);
+            //length = strlen(buf);
 
             //send the packet through the proxy to the bank
 
             if(pass)// && loggedIn)
             {
                 //if no error in input encrypt and pad packet.
-
+                std::string ciphertext = createPacket(std::string(buf));
+                std::cout << ciphertext.size() << std::endl;
+                strcpy(packet, ciphertext.data());
+                length = 1008;//strlen(packet);
 
                 if(sizeof(int) != send(sock, &length, sizeof(int), 0))
                 {

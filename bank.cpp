@@ -15,11 +15,117 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include "crypto++/modes.h"
+#include "crypto++/aes.h"
+#include "crypto++/filters.h"
+#include "crypto++/integer.h"
+#include "crypto++/rsa.h"
+#include "crypto++/osrng.h"
+#include "crypto++/sha.h"
+#include "crypto++/hex.h"
 
 #include "account.cpp"
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
+
+
+
+std::string randomString(const unsigned int len) {
+
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        
+    std::string s = "";
+    
+    //When adding each letter, generate a new word32,
+    //then compute it modulo alphanum's size - 1
+    
+    for(unsigned int i = 0; i < len; ++i) {
+        s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    } 
+    return s;
+}
+
+void padCommand(std::string &command){
+    
+    // pad end of packet with '~' then 'a's to separate command
+    // from string for parsing
+    
+    //if (command.size() < 460){ //1022 because buildPacket() has two '\0's
+    if (command.size() < 1007){
+        command += "~";
+    }
+    while(command.size() < 1007){
+        command += "a";
+    }
+}
+
+void unpadCommand(std::string &plaintext) {
+    // find index of ~ and truncate string
+    bool positionFound = false;
+    int position = -1;
+    for(unsigned int i = 0; i < plaintext.size(); ++i) {
+        if(plaintext[i] == '~') {
+            positionFound = true;
+            position = i;
+            break;
+        }
+    }
+
+    if(position > 0 && positionFound) {
+        plaintext = plaintext.substr(0,position);
+    }
+    else {
+        // that was some bad input
+    }
+    return;
+}
+
+void encryptCommand(std::string& ciphertext, std::string& command, byte* key, byte* iv) {
+    CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
+
+    CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
+    stfEncryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.length() + 1 );
+    stfEncryptor.MessageEnd();
+}
+
+void decryptCommand(std::string& decipher, std::string& command, byte* key, byte* iv) {
+    CryptoPP::AES::Decryption aesDecryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption( aesDecryption, iv );
+
+    CryptoPP::StreamTransformationFilter stfDecryptor(cbcDecryption, new CryptoPP::StringSink( decipher ) );
+    stfDecryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.size() );
+    stfDecryptor.MessageEnd();
+}
+
+std::string createHash(const std::string& input) {
+    CryptoPP::SHA512 hash;
+    byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
+    //input.resize(CryptoPP::SHA512::DIGESTSIZE);
+    hash.CalculateDigest( digest, (byte*) input.c_str(), input.length() );
+    CryptoPP::HexEncoder encoder;
+    std::string output;
+    encoder.Attach( new CryptoPP::StringSink( output ) );
+    encoder.Put( digest, sizeof(digest) );
+    encoder.MessageEnd();
+    return output;
+}
+
+void decryptPacket(char* packet){
+    //printf("%s\n", packet);
+    std::string ciphertext = std::string(packet), plaintext;
+    std::cout << ciphertext.size();
+    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
+    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    decryptCommand(plaintext, ciphertext, key, iv);
+    std::cout << plaintext;
+}
+
 
 //Perhaps we should write this to a file so a power out attack cant erase accounts
 std::vector<Account> Accounts;
@@ -134,7 +240,7 @@ void* client_thread(void* arg)
             break;
         }
         //TODO: process packet data
-
+        decryptPacket(packet);
         //decrypt and authenticate
         //store in buffer after decryption
         //unpad?
