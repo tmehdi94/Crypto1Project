@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 
 std::string randomString(const unsigned int len) {
 
@@ -242,5 +243,12 @@ bool Account::transfer(int amount, Account *other)
 
 std::string Account::getFileInfo()
 {
-    return name + " " + amount;
+    std::stringstream ss;
+    ss << balance;
+
+    std::string temp;
+    ss >> temp;
+
+    temp = name + " " + temp;
+    return temp;
 }
