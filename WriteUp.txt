@@ -1,0 +1,24 @@
+WriteUp raw data
+Can convert to word/pdf later.
+
+"TEAM NAME" Protocol:
+    Backup Protection:
+        All accounts are backed up for protection against power outage attacks.  The protocol backs up all accounts within a 5 second window to an encrypted AES file on the bank.
+        The account_data.data file is checked upon the bank starting.  If the file exists it will read the accounts from that file, otherwise the default accounts are initialized.
+        If time permitted this would have been better suited as a SQL database but due to resource limitations we took the file backup approach.
+    
+    Packet Padding:
+
+    Packet Encryption:
+
+    Key Exchange:
+
+    Synchronization Protection:
+        Locks exist for each account to prevent synchronization errors.
+
+    Banking Error Protection:
+        Integer datatype is used to hold balances.  We protect against overflows by installing a bank limit for the amount of money that can exist per account.
+        Negative transfer/deposit commands are not allowed.
+
+    ATM Login Protection:
+        
