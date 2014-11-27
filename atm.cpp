@@ -164,10 +164,11 @@ std::string createHash(const std::string& input) {
 }
 
 
-std::string createPacket(std::string input){
+std::string createPacket(std::string input, std::string account){
     const std::string APPSALT = "THISISAFUCKINGDOPESALT";
-    std::string hash = createHash(input + APPSALT);
-    std::string output = input + " " + hash;
+    std::string output = input + " " + account;
+    std::string hash = createHash(output + APPSALT);
+    output = output + " " + hash;
 
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
@@ -177,6 +178,7 @@ std::string createPacket(std::string input){
     //string decipher;
 
     padCommand(output);
+    std::cout << output << std::endl;
     //ciphertext = output;
     encryptCommand(ciphertext, output, key, iv);
     //std::cout <<"encryption: " <<  ciphertext << " " << ciphertext.size() << std::endl;
@@ -224,6 +226,7 @@ int main(int argc, char* argv[])
     const std::string appSalt = "THISISAFUCKINGDOPESALT";
 	char buf[80];
 	char packet[1024];
+    std::string accountHash;
 	std::vector<std::string> commands;
 	while(1)
 	{
@@ -295,7 +298,7 @@ int main(int argc, char* argv[])
                         pin = getpass("PIN: ", true);
                        
                         //Now we'll figure out the hash that we need to send
-                        std::string accountHash = createHash(cardHash + appSalt + pin);
+                        accountHash = createHash(cardHash + pin + appSalt);
                         
                         // send account hash to bank to verify.
 
@@ -344,7 +347,7 @@ int main(int argc, char* argv[])
             if(pass)// && loggedIn)
             {
                 //if no error in input encrypt and pad packet.
-                std::string ciphertext = createPacket(std::string(buf));
+                std::string ciphertext = createPacket(std::string(buf), accountHash);
                 std::cout << ciphertext.size() << std::endl;
                 strcpy(packet, ciphertext.data());
                 length = strlen(packet);
