@@ -16,16 +16,17 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-#include "crypto++/modes.h"
-#include "crypto++/aes.h"
-#include "crypto++/filters.h"
-#include "crypto++/integer.h"
-#include "crypto++/rsa.h"
-#include "crypto++/osrng.h"
-#include "crypto++/sha.h"
-#include "crypto++/hex.h"
-#include "crypto++/files.h"
-#include "crypto++/cryptlib.h"
+
+#include "local/cryptopp/modes.h"
+#include "local/cryptopp/aes.h"
+#include "local/cryptopp/filters.h"
+#include "local/cryptopp/integer.h"
+#include "local/cryptopp/rsa.h"
+#include "local/cryptopp/osrng.h"
+#include "local/cryptopp/sha.h"
+#include "local/cryptopp/hex.h"
+#include "local/cryptopp/files.h"
+#include "local/cryptopp/cryptlib.h"
 
 #include "account.h"
 
