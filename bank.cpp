@@ -55,10 +55,10 @@ void padCommand(std::string &command){
     // from string for parsing
     
     //if (command.size() < 460){ //1022 because buildPacket() has two '\0's
-    if (command.size() < 1007){
+    if (command.size() < 495){
         command += "~";
     }
-    while(command.size() < 1007){
+    while(command.size() < 495){
         command += "a";
     }
 }
@@ -115,15 +115,18 @@ std::string createHash(const std::string& input) {
     return output;
 }
 
-void decryptPacket(char* packet){
-    //printf("%s\n", packet);
-    std::string ciphertext = std::string(packet), plaintext;
-    std::cout << ciphertext.size();
+void decryptPacket(std::string& packet){
+    std::string ciphertext;
+
+    CryptoPP::StringSource(packet, true,
+        new CryptoPP::HexDecoder(new CryptoPP::StringSink(ciphertext)) // HexEncoder
+    );
+    std::string plaintext;
+
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
     decryptCommand(plaintext, ciphertext, key, iv);
-    std::cout << plaintext;
 }
 
 
@@ -243,14 +246,16 @@ void* client_thread(void* arg)
             break;
         }
         //TODO: process packet data
-        decryptPacket(packet);
+        std::string text = std::string(packet);
+        decryptPacket(text);
+        std::cout << text <<std::endl;
         //decrypt and authenticate
         //store in buffer after decryption
         //unpad?
 
         std::vector<std::string> commands;
-        char hold[strlen(packet)];
-        strcpy(hold, packet);
+        char hold[text.size()];
+        strcpy(hold, text.c_str());
         //char* hold = buffer;
         char* token = strtok(hold," ");
         int i = 0;
@@ -347,6 +352,10 @@ void* client_thread(void* arg)
             {
                 buffer = "Can't transfer to yourself";
             }
+        }
+        else
+        {
+            buffer = "Shit is Fucked";
         }
         bzero(packet, strlen(packet));
         

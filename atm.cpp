@@ -96,10 +96,10 @@ void padCommand(std::string &command){
     // from string for parsing
     
     //if (command.size() < 460){ //1022 because buildPacket() has two '\0's
-    if (command.size() < 1006){
+    if (command.size() < 494){
         command += "~";
     }
-    while(command.size() < 1006){
+    while(command.size() < 494){
         command += "a";
     }
 }
@@ -132,6 +132,12 @@ void encryptCommand(std::string& ciphertext, std::string& command, byte* key, by
     CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
     stfEncryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.length() + 1 );
     stfEncryptor.MessageEnd();
+
+    std::string encodedCipher;
+    CryptoPP::StringSource(ciphertext, true,
+        new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
+    );
+    ciphertext = encodedCipher;
 }
 
 void decryptCommand(std::string& decipher, std::string& command, byte* key, byte* iv) {
@@ -337,7 +343,7 @@ int main(int argc, char* argv[])
                 std::string ciphertext = createPacket(std::string(buf));
                 std::cout << ciphertext.size() << std::endl;
                 strcpy(packet, ciphertext.data());
-                length = 1008;//strlen(packet);
+                length = strlen(packet);
 
                 if(sizeof(int) != send(sock, &length, sizeof(int), 0))
                 {
