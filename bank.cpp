@@ -128,8 +128,6 @@ void decryptPacket(std::string& packet){
     packet = plaintext;
 }
 
-
-//Perhaps we should write this to a file so a power out attack cant erase accounts
 std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
@@ -445,7 +443,7 @@ void* console_thread(void* arg)
         }
 
 
-        if(commands[0] == "deposit")
+        if(commands[0] == "deposit" && commands.size() == 3)
         {
             Account *current = NULL;
             for(i = 0; i < Accounts.size(); i++)
@@ -469,7 +467,7 @@ void* console_thread(void* arg)
                 current->deposit(atoi(commands[2].c_str()));
             }
         }
-        else if(commands[0] == "balance")
+        else if(commands[0] == "balance" && commands.size() == 2)
         {
             Account *current = NULL;
             for(i = 0; i < Accounts.size(); i++)
@@ -500,8 +498,8 @@ void* backup_thread(void* arg)
 {
     while(1)
     {
-        //Every 30 seconds the accounts will be backed up.
-        sleep(30);
+        //Every 5 seconds the accounts will be backed up.
+        sleep(5);
         std::ofstream account_data("account_data.data");
 
         for (unsigned int i = 0; i < Accounts.size(); i++)
