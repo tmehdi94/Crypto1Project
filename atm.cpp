@@ -298,7 +298,7 @@ int main(int argc, char* argv[])
                         pin = getpass("PIN: ", true);
                        
                         //Now we'll figure out the hash that we need to send
-                        accountHash = createHash(cardHash + pin + appSalt);
+                        accountHash = createHash(cardHash + appSalt + pin);
                         
                         // send account hash to bank to verify.
 
