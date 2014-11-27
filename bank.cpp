@@ -237,6 +237,8 @@ void* client_thread(void* arg)
         std::string buffer;
 
         if(commands[0] == "login")
+            //expected input: login   user,cardhash,passhash
+            //                  0      1        2      3
         {
             for(int i = 0; i < Accounts.size(); i++)
             {
@@ -244,7 +246,10 @@ void* client_thread(void* arg)
                 {
                     // this needs to be changed to compare the hashes
                     //if(commands[2] == Accounts[i].getPin())
-                    if(Accounts[i].tryLogin(commands[2]))
+                    if(!Accounts[i].validCard(commands[2])) {
+                        buffer = "Invalid card";
+                    }
+                    if(Accounts[i].tryLogin(commands[3]))
                     {
                         buffer = "Logged in";
                         current = &Accounts[i];

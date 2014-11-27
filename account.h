@@ -40,6 +40,7 @@ class Account
         bool makeAccount(const std::string& n, const std::string& p, const std::string& APPSALT);
         bool setHash(const std::string& p, const std::string& APPSALT);
         bool tryLogin(const std::string& tryHash);
+        bool validCard(const std::string& cardHash);
         std::string getName();
         int getBalance();
         void setBalance(int b);
@@ -123,6 +124,13 @@ bool Account::setHash(const std::string& p, const std::string& APPSALT)
     }
     std::string hash = createHash(this->card + APPSALT + p);
     this->hash = hash;
+    return true;
+}
+
+bool Account::validCard(const std::string& cardHash) {
+    if(this->card != cardHash) {
+        return false;
+    }
     return true;
 }
 
