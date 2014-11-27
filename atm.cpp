@@ -13,6 +13,7 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include "crypto++/modes.h"
 #include "crypto++/aes.h"
@@ -39,10 +40,6 @@ int getch() {
     tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
     return ch;
 }
-
-
-
-
 
 std::string getpass(const char *prompt, bool show_asterisk=true)
 {
@@ -219,7 +216,32 @@ int main(int argc, char* argv[])
 		printf("Usage: atm proxy-port\n");
 		return -1;
 	}
-	
+
+    //id generation
+    std::string id_path;
+    unsigned int possible_id = 1;
+    while (1)
+    {
+        id_path = "";
+        std::stringstream ss;
+        ss << possible_id;
+        ss >> id_path;
+        id_path = "keys/atm" + id_path + ".key";
+        std::ifstream check_file(id_path.c_str());
+
+        if (!check_file)
+        {
+            //Open id, create key
+            std::ofstream id_file(id_path.c_str());
+
+            //TODO Write key to file
+            id_file << "HELLO\n";
+            //Do stuff with it
+            break;
+        }
+        possible_id++;
+    }
+
 	//socket setup
 	unsigned short proxport = atoi(argv[1]);
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -424,7 +446,13 @@ int main(int argc, char* argv[])
             std::cout << std::endl;
         }
     }
-	
+
+    //Delete atm key file
+    if (remove(id_path.c_str()) != 0 )
+    {
+        perror( "Error deleting file" );
+        return -1;
+    }
 	//cleanup
 	close(sock);
 	return 0;
