@@ -24,6 +24,8 @@
 #include "crypto++/osrng.h"
 #include "crypto++/sha.h"
 #include "crypto++/hex.h"
+#include "crypto++/files.h"
+#include "crypto++/cryptlib.h"
 
 #include "account.h"
 
@@ -32,6 +34,40 @@ const std::string APPSALT = "THISISAFUCKINGDOPESALT";
 void* client_thread(void* arg);
 void* console_thread(void* arg);
 void* backup_thread(void* arg);
+
+
+void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt)
+{
+    CryptoPP::FileSink file(filename.c_str());
+
+    bt.CopyTo(file);
+    file.MessageEnd();
+}
+
+void SavePublicKey(const std::string& filename, const CryptoPP::RSA::PublicKey& key)
+{
+    CryptoPP::ByteQueue queue;
+    key.Save(queue);
+
+    Save(filename, queue);
+}
+
+
+void Load(const std::string& filename, CryptoPP::BufferedTransformation& bt)
+{
+    CryptoPP::FileSource file(filename.c_str(), true /*pumpAll*/);
+
+    file.TransferTo(bt);
+    bt.MessageEnd();
+}
+
+void LoadPublicKey(const std::string& filename, CryptoPP::RSA::PublicKey& key)
+{
+    CryptoPP::ByteQueue queue;
+    Load(filename, queue);
+
+    key.Load(queue);    
+}
 
 
 void padCommand(std::string &command){
@@ -133,6 +169,11 @@ std::vector<Account> Accounts;
 int main(int argc, char* argv[])
 {
     std::ifstream account_data("account_data.data");
+    CryptoPP::AutoSeededRandomPool prng;
+    CryptoPP::RSA::PrivateKey privKey;
+    privKey.GenerateRandomWithKeySize(prng,1024);
+    CryptoPP::RSA::PublicKey pubKey(privKey);
+    SavePublicKey("keys/bank.key", pubKey);
 
     if (account_data)
     {
@@ -241,6 +282,8 @@ int main(int argc, char* argv[])
 
 void* client_thread(void* arg)
 {
+    //TODO handshake and establish keys
+
     int csock = *(int*)arg;
 
     printf("[bank] client ID #%d connected\n", csock);

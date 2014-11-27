@@ -23,7 +23,43 @@
 #include "crypto++/osrng.h"
 #include "crypto++/sha.h"
 #include "crypto++/hex.h"
-    const std::string appSalt = "THISISAFUCKINGDOPESALT";
+#include "crypto++/files.h"
+#include "crypto++/cryptlib.h"
+const std::string appSalt = "THISISAFUCKINGDOPESALT";
+
+
+void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt)
+{
+    CryptoPP::FileSink file(filename.c_str());
+
+    bt.CopyTo(file);
+    file.MessageEnd();
+}
+
+void SavePublicKey(const std::string& filename, const CryptoPP::RSA::PublicKey& key)
+{
+    CryptoPP::ByteQueue queue;
+    key.Save(queue);
+
+    Save(filename, queue);
+}
+
+
+void Load(const std::string& filename, CryptoPP::BufferedTransformation& bt)
+{
+    CryptoPP::FileSource file(filename.c_str(), true /*pumpAll*/);
+
+    file.TransferTo(bt);
+    bt.MessageEnd();
+}
+
+void LoadPublicKey(const std::string& filename, CryptoPP::RSA::PublicKey& key)
+{
+    CryptoPP::ByteQueue queue;
+    Load(filename, queue);
+
+    key.Load(queue);    
+}
 
 
 int getch() {
@@ -216,7 +252,10 @@ int main(int argc, char* argv[])
 		printf("Usage: atm proxy-port\n");
 		return -1;
 	}
-
+    CryptoPP::AutoSeededRandomPool prng;
+    CryptoPP::RSA::PrivateKey privKey;
+    privKey.GenerateRandomWithKeySize(prng, 1024);
+    CryptoPP::RSA::PublicKey pubKey(privKey);
     //id generation
     std::string id_path;
     unsigned int possible_id = 1;
@@ -233,9 +272,10 @@ int main(int argc, char* argv[])
         {
             //Open id, create key
             std::ofstream id_file(id_path.c_str());
-
+            //close(id_file);
             //TODO Write key to file
-            id_file << "HELLO\n";
+            SavePublicKey(id_path, pubKey);
+            //id_file << "HELLO\n";
             //Do stuff with it
             break;
         }
@@ -263,6 +303,9 @@ int main(int argc, char* argv[])
 		printf("fail to connect to proxy\n");
 		return -1;
 	}
+    //TODO establish handshake and transfer keys
+
+
 
 	//bool loggedIn = false;
 	//input loop
