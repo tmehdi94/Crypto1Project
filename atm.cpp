@@ -89,15 +89,43 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
+                    string user = commands[1];
+                    /*
                     char pin[10];
                     std::cout << "Enter PIN: ";
                     fgets(pin, 9, stdin);
                     pin[strlen(pin) - 1] = '\0';
                     strcat(buf, " ");
                     strcat(buf, pin);
-                    //confirmation and authentication.
-                    //if good, loggedIn = true;
-                }
+                    */
+
+                    std::ifstream cardFile(("cards/" + username + ".card").c_str());
+                    if(cardFile) {
+                        //atmSession.handshake(sock);
+                        //if(atmSession.state != 2) {
+                        //    cout << "Unexpected error.\n";
+                        //    break;
+                        //}
+                        //sendPacket = 1; // Send packet because valid command
+
+                        //obtain card hash
+                        cardFile >> cardHash;
+                        cardHash = cardHash.substr(0,128);
+                        
+                        //this block prompts for PIN for login and puts it in the pin var
+                        std::string pin;
+                        pin = getpass("PIN: ", true);
+                       
+                        //Now we'll figure out the hash that we need to send
+                        std::string accountHash = makeHash(cardHash + pin + appSalt);
+                        
+                        // send account hash to bank to verify.
+
+                        //if good, loggedIn = true;
+                    }
+                    else {
+                        cout << "ATM Card not found" << endl;
+                    }   
             }
             else if(commands[0] == "balance")
             {

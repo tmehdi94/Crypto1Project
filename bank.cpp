@@ -161,7 +161,8 @@ void* client_thread(void* arg)
                 if(commands[1] == Accounts[i].getName())
                 {
                     // this needs to be changed to compare the hashes
-                    if(commands[2] == Accounts[i].getPin())
+                    //if(commands[2] == Accounts[i].getPin())
+                    if(Accounts[i].tryLogin())
                     {
                         buffer = "Logged in";
                         current = &Accounts[i];
