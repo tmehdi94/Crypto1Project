@@ -1,40 +1,38 @@
 class Account
 {
     public:
-        Account(std::string, int, std::string);
         Account();
         Account & operator= (const Account & a);
+        bool makeAccount(const std::string& n, const std::string& p, const std::string& APPSALT);
+        void setHash(const std::string& p, const std::string& APPSALT);
         std::string getName();
         int getBalance();
         void setBalance(int b);
         std::string getPin();
-        void setPin(std::string p);
         bool withdraw(int amount);
         bool deposit(int amount);
         bool transfer(int amount, Account *other);
 
     private:
-        int accountnum;
+        //int accountnum;
         std::string name;
+        std::string card;
+        std::string salt;
         int balance;
-        std::string pinhash;
+        std::string hash;
         int loginattempts;
         bool loggedin;
         pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 };
 
-Account::Account (std::string n, int m, std::string p)
-{
-    balance = m;
-    name = n;
-    pinhash = p;
-}
-
 Account::Account ()
 {
-    balance = 0;
     name = "";
-    pinhash  = "0000";
+    card = "";
+    balance = 0;
+    hash  = "0000";
+    loginattempts = 0;
+    loggedin = false;
 }
 
 Account &Account::operator= (const Account & a)
@@ -42,10 +40,53 @@ Account &Account::operator= (const Account & a)
     if (this != &a){
         this->name = a.name;
         this->balance = a.balance;
-        this->pinhash = a.pinhash;
+        this->hash = a.hash;
     }
     return *this;
 }
+
+
+bool makeAccount(const std::string& n, const std::string& p, const std::string& APPSALT)
+{
+
+    if (n == "") {
+        account must have name
+        return false;
+    }
+    this->name = n;
+    // card hash = createHash(account salt + account name)
+    this->salt = createHash(randomString(128));
+    this->card = createHash(this->salt + n);
+    std::string cardFilename = "cards/" + n + ".card";
+    std::ofstream outfile(cardFilename.c_str());
+    if(outfile.is_open()) {
+        outfile << this->card;
+        //cout << "AYYYYYY" << endl;
+    }
+    else {
+        return false;
+    }
+    outfile.close();
+    
+    if(!setHash(p, APPSALT)) {
+        return false;
+    }
+    return true;
+}
+
+bool Account::setHash(const std::string& p, const std::string& APPSALT)
+{
+    // account hash = createHash(card hash + appwide salt + pin)
+
+    // more than 4 chars, less than 16
+    if (p.length() > 16 || p.length() < 3) {
+        return false;
+    }
+    string hash = createHash(this->card + APPSALT + p);
+    this->hash = hash;
+    return true;
+}
+
 
 std::string Account::getName()
 {
@@ -64,13 +105,9 @@ void Account::setBalance(int b)
 
 std::string Account::getPin()
 {
-    return pinhash;
+    return hash;
 }
 
-void Account::setPin(std::string p)
-{
-    pinhash = p;
-}
 
 /*
 bool Account::tryLogin(std::string l) {

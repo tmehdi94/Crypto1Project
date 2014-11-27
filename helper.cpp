@@ -109,7 +109,7 @@ int main() {
 	byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
-
+    cout << CryptoPP::AES::DEFAULT_KEYLENGTH ;
 	string str = "hello there!!!!!!!!!!!!!!!!";
 	string ciphertext;
 	string decipher;

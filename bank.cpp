@@ -17,23 +17,41 @@
 #include <sstream>
 
 #include "account.cpp"
-  
+
 void* client_thread(void* arg);
 void* console_thread(void* arg);
-
-
 
 //Perhaps we should write this to a file so a power out attack cant erase accounts
 std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
-    Account a("Alice", 100, "1234");
+    const string APPSALT = "THISISAFUCKINGDOPESALT";
+
+    Account acc = new Account();
+    
+    string name = "Alice", pin = "1234";
+    acc->makeAccount(name, pin, APPSALT );
+    acc->deposit(100);
+    Accounts.push_back(acc);
+
+    name = "Bob", pin = "1234";
+    acc->makeAccount(name, pin, APPSALT );
+    acc->deposit(50);
+    Accounts.push_back(acc);
+
+    name = "Eve", pin = "1234";
+    acc->makeAccount(name, pin, APPSALT );
+    Accounts.push_back(acc);
+
+    /*
+    Account a("Alice", "1234", APPSALT);
     Account b("Bob", 50, "1234");
     Account e("Eve", 0 , "1234");
     Accounts.push_back(a);
     Accounts.push_back(b);
     Accounts.push_back(e);
+    */
 
     if(argc != 2)
     {
