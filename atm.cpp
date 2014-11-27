@@ -220,6 +220,7 @@ int main(int argc, char* argv[])
 
 	//bool loggedIn = false;
 	//input loop
+    const std::string appSalt = "THISISAFUCKINGDOPESALT";
 	char buf[80];
 	char packet[1024];
 	std::vector<std::string> commands;
@@ -264,7 +265,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    std::string user = commands[1];
+                    std::string username = commands[1];
                     /*
                     char pin[10];
                     std::cout << "Enter PIN: ";
@@ -284,6 +285,7 @@ int main(int argc, char* argv[])
                         //sendPacket = 1; // Send packet because valid command
 
                         //obtain card hash
+                        std::string cardHash;
                         cardFile >> cardHash;
                         cardHash = cardHash.substr(0,128);
                         
@@ -292,7 +294,7 @@ int main(int argc, char* argv[])
                         pin = getpass("PIN: ", true);
                        
                         //Now we'll figure out the hash that we need to send
-                        std::string accountHash = makeHash(cardHash + pin + appSalt);
+                        std::string accountHash = createHash(cardHash + pin + appSalt);
                         
                         // send account hash to bank to verify.
 
