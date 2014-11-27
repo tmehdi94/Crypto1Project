@@ -95,7 +95,7 @@ bool Account::tryLogin(const std::string& p, const std::string& APPSALT) {
     if(this->loggedin || this->lockedout ) {
         return false;
     }
-    std::string tryHash = makeHash(this->card + pin + APPSALT);
+    std::string tryHash = makeHash(this->card + p + APPSALT);
     if(this->hash == tryHash) {
         this->loggedin = true;
         return true;
@@ -132,14 +132,6 @@ std::string Account::getPin()
 {
     return hash;
 }
-
-
-/*
-bool Account::tryLogin(std::string l) {
-    // pthread_mutex_lock(&lock); <-- do we need this
-    bool status = false;
-
-}*/
 
 bool Account::withdraw(int amount)
 {
