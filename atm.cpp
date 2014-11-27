@@ -3,6 +3,7 @@
 	@brief Top level ATM implementation file
  */
 #include <unistd.h>
+#include <termios.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -20,6 +21,56 @@
 #include "crypto++/osrng.h"
 #include "crypto++/sha.h"
 #include "crypto++/hex.h"
+int getch() {
+    int ch;
+    struct termios t_old, t_new;
+
+    tcgetattr(STDIN_FILENO, &t_old);
+    t_new = t_old;
+    t_new.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &t_new);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
+    return ch;
+}
+
+
+
+
+
+string getpass(const char *prompt, bool show_asterisk=true)
+{
+  const char BACKSPACE=127;
+  const char RETURN=10;
+
+  string password;
+  unsigned char ch=0;
+
+  cout <<prompt<<endl;
+
+  while((ch=getch())!=RETURN)
+    {
+       if(ch==BACKSPACE)
+         {
+            if(password.length()!=0)
+              {
+                 if(show_asterisk)
+                 cout <<"\b \b";
+                 password.resize(password.length()-1);
+              }
+         }
+       else
+         {
+             password+=ch;
+             if(show_asterisk)
+                 cout <<'*';
+         }
+    }
+  cout <<endl;
+  return password;
+}
 
 std::string randomString(const unsigned int len) {
 
@@ -207,15 +258,43 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
+                    string user = commands[1];
+                    /*
                     char pin[10];
                     std::cout << "Enter PIN: ";
                     fgets(pin, 9, stdin);
                     pin[strlen(pin) - 1] = '\0';
                     strcat(buf, " ");
                     strcat(buf, pin);
-                    //confirmation and authentication.
-                    //if good, loggedIn = true;
-                }
+                    */
+
+                    std::ifstream cardFile(("cards/" + username + ".card").c_str());
+                    if(cardFile) {
+                        //atmSession.handshake(sock);
+                        //if(atmSession.state != 2) {
+                        //    cout << "Unexpected error.\n";
+                        //    break;
+                        //}
+                        //sendPacket = 1; // Send packet because valid command
+
+                        //obtain card hash
+                        cardFile >> cardHash;
+                        cardHash = cardHash.substr(0,128);
+                        
+                        //this block prompts for PIN for login and puts it in the pin var
+                        std::string pin;
+                        pin = getpass("PIN: ", true);
+                       
+                        //Now we'll figure out the hash that we need to send
+                        std::string accountHash = makeHash(cardHash + pin + appSalt);
+                        
+                        // send account hash to bank to verify.
+
+                        //if good, loggedIn = true;
+                    }
+                    else {
+                        cout << "ATM Card not found" << endl;
+                    }   
             }
             else if(commands[0] == "balance")
             {

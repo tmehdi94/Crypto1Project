@@ -5,6 +5,7 @@ class Account
         Account & operator= (const Account & a);
         bool makeAccount(const std::string& n, const std::string& p, const std::string& APPSALT);
         void setHash(const std::string& p, const std::string& APPSALT);
+        bool tryLogin(const std::string& tryHash);
         std::string getName();
         int getBalance();
         void setBalance(int b);
@@ -91,11 +92,11 @@ bool Account::setHash(const std::string& p, const std::string& APPSALT)
     return true;
 }
 
-bool Account::tryLogin(const std::string& p, const std::string& APPSALT) {
+bool Account::tryLogin(const std::string& tryHash) {
     if(this->loggedin || this->lockedout ) {
         return false;
     }
-    std::string tryHash = makeHash(this->card + pin + APPSALT);
+    //std::string tryHash = makeHash(this->card + p + APPSALT);
     if(this->hash == tryHash) {
         this->loggedin = true;
         return true;
@@ -132,14 +133,6 @@ std::string Account::getPin()
 {
     return hash;
 }
-
-
-/*
-bool Account::tryLogin(std::string l) {
-    // pthread_mutex_lock(&lock); <-- do we need this
-    bool status = false;
-
-}*/
 
 bool Account::withdraw(int amount)
 {
