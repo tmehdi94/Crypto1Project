@@ -40,15 +40,15 @@ int getch() {
 
 
 
-string getpass(const char *prompt, bool show_asterisk=true)
+std::string getpass(const char *prompt, bool show_asterisk=true)
 {
   const char BACKSPACE=127;
   const char RETURN=10;
 
-  string password;
+  std::string password;
   unsigned char ch=0;
 
-  cout <<prompt<<endl;
+  std::cout << prompt << std::endl;
 
   while((ch=getch())!=RETURN)
     {
@@ -57,7 +57,7 @@ string getpass(const char *prompt, bool show_asterisk=true)
             if(password.length()!=0)
               {
                  if(show_asterisk)
-                 cout <<"\b \b";
+                 std::cout <<"\b \b";
                  password.resize(password.length()-1);
               }
          }
@@ -65,10 +65,10 @@ string getpass(const char *prompt, bool show_asterisk=true)
          {
              password+=ch;
              if(show_asterisk)
-                 cout <<'*';
+                 std::cout <<'*';
          }
     }
-  cout <<endl;
+  std::cout << std::endl;
   return password;
 }
 
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    string user = commands[1];
+                    std::string user = commands[1];
                     /*
                     char pin[10];
                     std::cout << "Enter PIN: ";
@@ -299,8 +299,9 @@ int main(int argc, char* argv[])
                         //if good, loggedIn = true;
                     }
                     else {
-                        cout << "ATM Card not found" << endl;
-                    }   
+                        std::cout << "ATM Card not found" << std::endl;
+                    }
+                }
             }
             else if(commands[0] == "balance")
             {
