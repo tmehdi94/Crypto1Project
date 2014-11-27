@@ -1,7 +1,10 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
-#include <time.h>       
+#include <time.h>
+#include <iostream>
+#include <fstream>
+
 #include "crypto++/modes.h"
 #include "crypto++/aes.h"
 #include "crypto++/filters.h"
@@ -186,6 +189,29 @@ int main() {
 	else {
 		cout << "log in failed" << endl;
 	}
+
+	// card stuff from here on out.
+	string cardsalt = createHash(randomString(128));
+	std::string cardContents = createHash(user + cardsalt);
+
+	// card hash = createHash(the salt that was just created + account name)
+	// account hash = createHash(card hash + appwide salt + pin)
+
+	std::string cardFilename = "cards/" + user + ".card";
+	cout << cardFilename << endl;
+	std::ofstream outfile(cardFilename.c_str());
+	if(outfile.is_open()) {
+		outfile << cardContents;
+		cout << "AYYYYYY" << endl;
+	}
+	else {
+		cout << "Error in opening file" << endl;
+	}
+	outfile.close();
+	cout << cardContents << endl;
+
+	string acchash = createHash(cardContents + APPSALT + pin);
+	cout << acchash << endl;
 }
 
 
