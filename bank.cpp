@@ -15,6 +15,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <fstream>
 #include "crypto++/modes.h"
 #include "crypto++/aes.h"
 #include "crypto++/filters.h"
@@ -26,10 +27,11 @@
 
 #include "account.h"
 
-      const std::string APPSALT = "THISISAFUCKINGDOPESALT";
+const std::string APPSALT = "THISISAFUCKINGDOPESALT";
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
+void* backup_thread(void* arg);
 
 
 void padCommand(std::string &command){
@@ -131,35 +133,50 @@ std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
+    std::ifstream account_data("account_data.data");
 
+    if (account_data)
+    {
+        std::string line;
 
-    Account acc;
-    
-    std::string name = "Alice";
-    std::string pin = "1234";
-    acc.makeAccount(name, pin, APPSALT );
-    acc.deposit(100);
-    Accounts.push_back(acc);
+        while(getline(account_data, line))
+        {
+            std::istringstream iss(line);
 
-    name = "Bob";
-    pin = "1234";
-    acc.makeAccount(name, pin, APPSALT );
-    acc.deposit(50);
-    Accounts.push_back(acc);
+            std::string info_name;
+            int info_amount;
 
-    name = "Eve";
-    pin = "1234";
-    acc.makeAccount(name, pin, APPSALT );
-    Accounts.push_back(acc);
+            iss >> info_name >> info_amount;
 
-    /*
-    Account a("Alice", "1234", APPSALT);
-    Account b("Bob", 50, "1234");
-    Account e("Eve", 0 , "1234");
-    Accounts.push_back(a);
-    Accounts.push_back(b);
-    Accounts.push_back(e);
-    */
+            Account acc;
+
+            std::string pin = "1234";
+            acc.makeAccount(info_name, pin, APPSALT );
+            acc.deposit(info_amount);
+            Accounts.push_back(acc);
+        }
+    }
+    else
+    {
+        Account acc;
+
+        std::string name = "Alice";
+        std::string pin = "1234";
+        acc.makeAccount(name, pin, APPSALT );
+        acc.deposit(100);
+        Accounts.push_back(acc);
+
+        name = "Bob";
+        pin = "1234";
+        acc.makeAccount(name, pin, APPSALT );
+        acc.deposit(50);
+        Accounts.push_back(acc);
+
+        name = "Eve";
+        pin = "1234";
+        acc.makeAccount(name, pin, APPSALT );
+        Accounts.push_back(acc);
+    }
 
     if(argc != 2)
     {
@@ -199,6 +216,9 @@ int main(int argc, char* argv[])
 
     pthread_t cthread;
     pthread_create(&cthread, NULL, console_thread, NULL);
+
+    pthread_t bthread;
+    pthread_create(&bthread, NULL, backup_thread, NULL);
 
     //loop forever accepting new connections
     while(1)
@@ -466,6 +486,21 @@ void* console_thread(void* arg)
         else
         {
             std::cout << "Command not valid" << std::endl;
+        }
+    }
+}
+
+void* backup_thread(void* arg)
+{
+    while(1)
+    {
+        //Every 30 seconds the accounts will be backed up.
+        sleep(30);
+        std::ofstream account_data("account_data.data");
+
+        for (unsigned int i = 0; i < Accounts.size(); i++)
+        {
+            account_data << Accounts[i].getFileInfo() << std::endl;
         }
     }
 }

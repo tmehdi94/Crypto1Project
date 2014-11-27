@@ -48,6 +48,7 @@ class Account
         bool withdraw(int amount);
         bool deposit(int amount);
         bool transfer(int amount, Account *other);
+        std::string getFileInfo();
 
     private:
         //int accountnum;
@@ -237,4 +238,9 @@ bool Account::transfer(int amount, Account *other)
     }
     pthread_mutex_unlock(&lock);
     return status;
+}
+
+std::string Account::getFileInfo()
+{
+    return name + " " + amount;
 }
