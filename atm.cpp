@@ -420,9 +420,9 @@ int main(int argc, char* argv[])
         {
             //input parsing
             bool pass = true;
-            if(!strcmp(buf, "logout"))
+            if(commands[0] == "logout")
             {
-                break;
+                pass = true;
             }
             else if(commands[0] == "login") // and not loggedIn
             {
@@ -525,6 +525,10 @@ int main(int argc, char* argv[])
                 if(length != send(sock, (void*)packet, length, 0))
                 {
                     printf("fail to send packet\n");
+                    break;
+                }
+                if(!strcmp(buf, "logout"))
+                {
                     break;
                 }
                 //std::cout << "FUCK" << std::endl; fflush(NULL);

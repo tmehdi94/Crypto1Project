@@ -530,6 +530,10 @@ void* client_thread(void* arg)
                     buffer = "Can't transfer to yourself";
                 }
             }
+            else if(commands[0] == "logout"){
+                current->tryLogout();
+                break;
+            }
             else
             {
                 buffer = "Shit is Fucked";

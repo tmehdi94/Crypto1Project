@@ -51,6 +51,7 @@ class Account
         bool deposit(int amount);
         bool transfer(int amount, Account *other);
         std::string getFileInfo();
+        bool tryLogout();
 
     private:
         //int accountnum;
@@ -277,4 +278,17 @@ std::string Account::getFileInfo()
     std::string ciphertext;
     encryptAccount(ciphertext, temp, key, iv);
     return ciphertext;
+}
+
+bool Account::tryLogout()
+{
+    if(loggedin)
+    {
+        loggedin = false;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
