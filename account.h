@@ -1,10 +1,23 @@
+/**
+  Taha Mehdi
+  Pratik Patel
+  Chris Renus
+
+  Cryptography and Network Security I
+  CSCI-4971-01
+  Final Project
+
+  @file account.h
+  @brief Account implementation file
+  */
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
 
+// generate random string of length len with given character sets 
 std::string randomString(const unsigned int len) {
-
     static const char alphanum[] =
         "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -14,16 +27,16 @@ std::string randomString(const unsigned int len) {
     
     //When adding each letter, generate a new word32,
     //then compute it modulo alphanum's size - 1
-    
     for(unsigned int i = 0; i < len; ++i) {
         s += alphanum[rand() % (sizeof(alphanum) - 1)];
     } 
     return s;
 }
+
+// create hash using SHA-512 algorithm with given input
 std::string createHash(const std::string& input) {
     CryptoPP::SHA512 hash;
     byte digest[ CryptoPP::SHA512::DIGESTSIZE ];
-    //input.resize(CryptoPP::SHA512::DIGESTSIZE);
     hash.CalculateDigest( digest, (byte*) input.c_str(), input.length() );
     CryptoPP::HexEncoder encoder;
     std::string output;
@@ -33,7 +46,7 @@ std::string createHash(const std::string& input) {
     return output;
 }
 
-
+// Account class implementation
 class Account
 {
     public:
@@ -66,6 +79,7 @@ class Account
         pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 };
 
+// encrypt and decrypt account information with Advanced Encryption Standard
 void encryptAccount(std::string& ciphertext, std::string& account_info, byte* key, byte* iv) {
     CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
@@ -84,6 +98,7 @@ void decryptAccount(std::string& decipher, std::string& account_info, byte* key,
     stfDecryptor.MessageEnd();
 }
 
+// account constructor
 Account::Account ()
 {
     name = "";
@@ -108,26 +123,27 @@ Account &Account::operator= (const Account & a)
 
 bool Account::makeAccount(const std::string& n, const std::string& p, const std::string& APPSALT)
 {
-
-    if (n == "") {
-        //account must have name
+    if (n == "") { //account must have name
         return false;
     }
+
     this->name = n;
-    // card hash = createHash(account salt + account name)
+
+    // card hash: createHash(account salt + account name)
     this->salt = createHash(randomString(128));
     this->card = createHash(this->salt + n);
+
     std::string cardFilename = "cards/" + n + ".card";
     std::ofstream outfile(cardFilename.c_str());
     if(outfile.is_open()) {
         outfile << this->card;
-        //cout << "AYYYYYY" << endl;
     }
     else {
         return false;
     }
     outfile.close();
     
+    // set pin hash
     if(!setHash(p, APPSALT)) {
         return false;
     }
@@ -136,19 +152,20 @@ bool Account::makeAccount(const std::string& n, const std::string& p, const std:
     return true;
 }
 
+// create pin hash
 bool Account::setHash(const std::string& p, const std::string& APPSALT)
 {
-    // account hash = createHash(card hash + appwide salt + pin)
-
-    // more than 4 chars, less than 16
+    // pin must be more than 4 chars, less than 16
     if (p.length() > 16 || p.length() < 3) {
         return false;
     }
+    // account hash: createHash(card hash + appwide salt + pin)
     std::string hash = createHash(this->card + APPSALT + p);
     this->hash = hash;
     return true;
 }
 
+// check if provided card is valid for account
 bool Account::validCard(const std::string& cardHash) {
     if(this->card != cardHash) {
         return false;
@@ -157,20 +174,19 @@ bool Account::validCard(const std::string& cardHash) {
 }
 
 bool Account::tryLogin(const std::string& tryHash) {
+    // if already logged in or locked out can't login
     if(this->loggedin || this->lockedout ) {
         return false;
     }
-    //std::string tryHash = makeHash(this->card + p + APPSALT);
-    if(this->hash == tryHash) {
+    if(this->hash == tryHash) { // logged in
         this->loggedin = true;
         return true;
     }
-    else {
-        if (loginattempts != 0) {
-            // still has remaining accounts
+    else { // fail login
+        if (loginattempts != 0) { // still has remaining attempts
             loginattempts--;
         }
-        else {
+        else { // all attempts used
             this->lockedout = true;
         }
         return false;
@@ -224,6 +240,7 @@ bool Account::deposit(int amount)
         int temp_balance = balance + amount;
         if (temp_balance < 0)
         {
+            status = false;
             //Too much money for bank to handle
         }
         else
@@ -261,6 +278,7 @@ bool Account::transfer(int amount, Account *other)
     return status;
 }
 
+// used for outputting to file
 std::string Account::getFileInfo()
 {
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];

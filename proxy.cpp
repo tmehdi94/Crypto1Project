@@ -1,6 +1,15 @@
 /**
-	@file proxy.cpp
-	@brief Top level proxy implementation file
+  Taha Mehdi
+  Pratik Patel
+  Chris Renus
+
+  Cryptography and Network Security I
+  CSCI-4971-01
+  Final Project
+
+  @file proxy.cpp
+  @brief Top level proxy implementation file
+
  */
 #include <unistd.h>
 #include <sys/socket.h>
@@ -72,6 +81,12 @@ void* client_thread(void* arg)
 {
 	int csock = (int)arg;
 	
+	// disconnect atm after 30 seconds if no activity
+    struct timeval tv;
+    tv.tv_sec = 30;       /* Timeout in seconds */
+    setsockopt(csock, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+    setsockopt(csock, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+    
 	printf("[proxy] client ID #%d connected\n", csock);
 	
 	//create a new socket and connect to the bank

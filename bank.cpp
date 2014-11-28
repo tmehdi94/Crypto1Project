@@ -1,7 +1,16 @@
 /**
+  Taha Mehdi
+  Pratik Patel
+  Chris Renus
+
+  Cryptography and Network Security I
+  CSCI-4971-01
+  Final Project
+
   @file bank.cpp
   @brief Top level bank implementation file
   */
+
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -30,12 +39,20 @@
 #include "account.h"
 
 const std::string APPSALT = "THISISAFUCKINGDOPESALT";
+
+// used in random number generation
 CryptoPP::AutoSeededRandomPool prng;
 
+// atm thread
 void* client_thread(void* arg);
+
+// bank thread
 void* console_thread(void* arg);
+
+// file backup thread
 void* backup_thread(void* arg);
 
+// struct to hold RSA keys
 struct rsa {
    CryptoPP::RSA::PrivateKey priv;
    CryptoPP::RSA::PublicKey pub;
@@ -43,6 +60,7 @@ struct rsa {
 };
 rsa keys;
 
+// functions to save public key to file
 void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt)
 {
     CryptoPP::FileSink file(filename.c_str());
@@ -59,7 +77,7 @@ void SavePublicKey(const std::string& filename, const CryptoPP::RSA::PublicKey& 
     Save(filename, queue);
 }
 
-
+// functions to load public key from file
 void Load(const std::string& filename, CryptoPP::BufferedTransformation& bt)
 {
     CryptoPP::FileSource file(filename.c_str(), true /*pumpAll*/);
@@ -76,13 +94,8 @@ void LoadPublicKey(const std::string& filename, CryptoPP::RSA::PublicKey& key)
     key.Load(queue);    
 }
 
-
+// pad end of packet with '~' then 'a's to separate command from string for parsing
 void padCommand(std::string &command){
-    
-    // pad end of packet with '~' then 'a's to separate command
-    // from string for parsing
-    
-    //if (command.size() < 460){ //1022 because buildPacket() has two '\0's
     if (command.size() < 494){
         command += "~";
     }
@@ -92,9 +105,10 @@ void padCommand(std::string &command){
 }
 
 void unpadCommand(std::string &plaintext) {
-    // find index of ~ and truncate string
     bool positionFound = false;
     int position = -1;
+
+    // find index of ~
     for(unsigned int i = 0; i < plaintext.size(); ++i) {
         if(plaintext[i] == '~') {
             positionFound = true;
@@ -103,6 +117,7 @@ void unpadCommand(std::string &plaintext) {
         }
     }
 
+    // truncate string
     if(position > 0 && positionFound) {
         plaintext = plaintext.substr(0,position);
     }
@@ -112,7 +127,7 @@ void unpadCommand(std::string &plaintext) {
     return;
 }
 
-
+// encrypt and decrypt account information with Advanced Encryption Standard
 void encryptCommand(std::string& ciphertext, std::string& command,const byte key[],const byte iv[]) {
     CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
@@ -120,8 +135,6 @@ void encryptCommand(std::string& ciphertext, std::string& command,const byte key
     CryptoPP::StreamTransformationFilter stfEncryptor(cbcEncryption, new CryptoPP::StringSink( ciphertext ) );
     stfEncryptor.Put( reinterpret_cast<const unsigned char*>( command.c_str() ), command.length() + 1 );
     stfEncryptor.MessageEnd();
-
-
 }
 
 void decryptCommand(std::string& decipher, std::string& command,const byte key[], const byte iv[]) {
@@ -134,66 +147,57 @@ void decryptCommand(std::string& decipher, std::string& command,const byte key[]
 }
 
 std::string createPacket(std::string input, byte* key, byte* iv){
+    // hash input
     std::string hash = createHash(input + APPSALT);
     input = input + " " + hash;
-    /*
-    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
-    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );*/
-    std::string ciphertext;
-    //printf("%s\n", key);
-    //string decipher;
 
     padCommand(input);
-    //std::cout << input << std::endl;
+
+    // encrypt and encode packet
+    std::string ciphertext;
     encryptCommand(ciphertext, input,(const byte*) key,(const byte*) iv);
     std::string encodedCipher;
     CryptoPP::StringSource(ciphertext, true,
         new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
     );
     ciphertext = encodedCipher;
-    //std::cout << ciphertext << std::endl;
     return ciphertext;
 }
 
 void decryptPacket(std::string& packet, byte* key, byte* iv){
-    //std::cout << packet.size() << std::endl;
-    //std::cout << packet << std::endl;
+
+    // first get ciphertext by decoding
     std::string ciphertext;
-    //std::cout << packet << std::endl;
     CryptoPP::StringSource(packet, true,
         new CryptoPP::HexDecoder(new CryptoPP::StringSink(ciphertext)) // HexEncoder
     );
+
+    // now decrypt that
     std::string plaintext;
-    /*
-    byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
-    memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );*/
-    //std::cout << strlen((char*)keys.key);
-    //std::cout <<"keys: " << strlen((char*)keys.key) << keys.key << std::endl << "iv: "<< strlen((char*)keys.iv) << keys.iv << std::endl;
-    //fflush(NULL);
     decryptCommand(plaintext, ciphertext,(const byte*) key, (const byte*) iv);
-    //std::cout << plaintext << std::endl;
+    
+    // finally unpad
     unpadCommand(plaintext);
     packet = plaintext;
-    //std::cout << packet << std::endl;
 }
 
+// hold all accounts in the banks
 std::vector<Account> Accounts;
 
 int main(int argc, char* argv[])
 {
-    std::ifstream account_data("account_data.data");
+
+    // set up RSA public and private keys
     CryptoPP::RSA::PrivateKey privKey;
     privKey.GenerateRandomWithKeySize(prng,1024);
     CryptoPP::RSA::PublicKey pubKey(privKey);
     SavePublicKey("keys/bank.key", pubKey);
     keys.pub = pubKey;
     keys.priv = privKey;
-    //keys.key = (const byte*) "";
-    //keys.iv = (const byte*) "";
     
-
+    // account_data.data holds the account information from previous sessions
+    // recover data if available
+    std::ifstream account_data("account_data.data");
     if (account_data)
     {
         std::string line;
@@ -220,6 +224,7 @@ int main(int argc, char* argv[])
             Accounts.push_back(acc);
         }
     }
+    // if not available generate new account information
     else
     {
         Account accAlice;
@@ -303,13 +308,10 @@ void* client_thread(void* arg)
 {
     //TODO handshake and establish keys
     int csock = *(int*)arg;
-    struct timeval tv;
- 
-    tv.tv_sec = 15;       /* Timeout in seconds */
- 
-    setsockopt(csock, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
-    setsockopt(csock, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 
+    
+
+    // AES set up
     byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
     byte iv[CryptoPP::AES::BLOCKSIZE];
     memset((void*) key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
@@ -331,59 +333,45 @@ void* client_thread(void* arg)
         return NULL;
     }
     std::string m = std::string(m_packet);
-    //std::cout << m;
+    
+    // space delimits message 
     std::string message = m.substr(0, m.find(" "));
-    //std::cout << createHash(message + APPSALT) << std::endl;
+    
+    // check if tampered with
     if(m.substr(m.find(" ")+1) != createHash(message + APPSALT)){
         printf("Hackers!!\n");
         return NULL;
     }
-    CryptoPP::Integer cipher(message.c_str());//std::atol(message.c_str()));
+    
+    // get RSA keys
+    CryptoPP::Integer cipher(message.c_str());
     CryptoPP::Integer plain = (keys.priv).CalculateInverse(prng, cipher);
-    //std::cout << std::hex << plain << std::endl;
     std::string recovered;
     size_t req = plain.MinEncodedSize();
     recovered.resize(req);
     plain.Encode((byte *)recovered.data(), recovered.size());
-
     CryptoPP::RSA::PublicKey atmKey;
     LoadPublicKey(recovered, atmKey);
 
-    //create AES key
+    // Create random AES key
     CryptoPP::AutoSeededRandomPool rnd;
-    // Generate a random key
-    //byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
     rnd.GenerateBlock( key, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    //printf("%s\n", key);
 
     // Generate a random IV
-    //byte iv[CryptoPP::AES::BLOCKSIZE];
     rnd.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
-    //std::string k = std::string((const byte*)key) + " " + std::string((const byte*)iv);
     
-    //memset( keys.key, (char*)key, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    //memset( keys.iv, (char*)iv, CryptoPP::AES::BLOCKSIZE );
-    //keys.iv = (byte*) iv;
-    //keys.key = (byte*) key;
-    //printf("%d\n",CryptoPP::AES::DEFAULT_KEYLENGTH );
-    //fflush(NULL);
+    
     std::stringstream hold;
-    hold <<key << ",," << iv;
+    hold << key << ",," << iv;
     std::string k = hold.str();
-    std::cout << "concat: " << k << std::endl;
-    std::cout << "key: " << key << std::endl << "iv: " << iv << std::endl;
-
     CryptoPP::Integer id((const byte *)k.data(), k.size());
     CryptoPP::Integer c = atmKey.ApplyFunction(id);
     std::stringstream ss;
-    ss << std::hex << c;//ss << c.ConvertToLong();
+    ss << std::hex << c;
     message = ss.str();
-    //std::cout << "message: " << message << std::endl;
-    //std::cout << message << std::endl;
+
     std::string handCheck = createHash(message + APPSALT);
     message = message + " " + handCheck;
-
-
 
     bzero(m_packet, strlen(m_packet));
     strcpy(m_packet, message.c_str());
@@ -398,13 +386,10 @@ void* client_thread(void* arg)
         printf("fail to send packet\n");
         return NULL;
     }
-    //std::cout << std::hex << keys.aes << std::endl << std::hex << keys.iv << std::endl;
-
-
-
+  
     printf("[bank] client ID #%d connected\n", csock);
 
-    //input loop
+    // input loop
     int length;
     char packet[1024];
     Account* current;
@@ -415,7 +400,6 @@ void* client_thread(void* arg)
         if(sizeof(int) != recv(csock, &length, sizeof(int), 0)){
             break;
         }
-        //std::cout << length << std::endl;
         if(length >= 1024)
         {
             printf("packet too long\n");
@@ -429,39 +413,33 @@ void* client_thread(void* arg)
         //TODO: process packet data
         
         std::string text = std::string(packet);
+        
         decryptPacket(text, key, iv);
-        //std::cout << text <<std::endl;
-        //decrypt and authenticate
-        //store in buffer after decryption
-        //unpad?
 
+        // parse commands
         std::vector<std::string> commands;
         char hold[text.size()];
         strcpy(hold, text.c_str());
-        //char* hold = buffer;
         char* token = strtok(hold," ");
         int i = 0;
         while(token != NULL)
         {
-            //printf("%s\n", "shit");
             commands.push_back(std::string(token));
             i++;
             token = strtok(NULL," ");
         }
         std::string buffer;
-        //expected input: login    user,card&passhash,checksum
-        //                  0        1         2          3
+        // expected input: login user passhash checksum
+        //      commands[]   0    1       2       3
         std::string input = text.substr(0, text.find_last_of(' '));
         std::string checksum = createHash(input + APPSALT);
         if(checksum == commands[commands.size()-1]){
             if(commands[0] == "login")
             {
-                for(int i = 0; i < Accounts.size(); i++)
+                for(int i = 0; i < Accounts.size(); i++) // locate account
                 {
                     if(commands[1] == Accounts[i].getName())
                     {
-                        // this needs to be changed to compare the hashes
-                        //if(commands[2] == Accounts[i].getPin())
                         if(Accounts[i].tryLogin(commands[2]))
                         {
                             buffer = "Logged in";
@@ -472,10 +450,9 @@ void* client_thread(void* arg)
                 }
                 if(current == NULL)
                 {
-                    //login and pin dont match
-                    buffer = "Username/PIN/card don't match";
+                    //login and pin dont match, or time out, or other general error
+                    buffer = "Login error";
                 }
-
             }
             else if(commands[0] == "balance")
             {
@@ -512,12 +489,12 @@ void* client_thread(void* arg)
                     }
                     if(other == NULL)
                     {
-                        //user account not found;
+                        //user account not found
                         buffer = "User could not be found";
                     }
                     else
                     {
-                        if (atoi(commands[1].c_str()) <= 0)
+                        if (atoi(commands[1].c_str()) <= 0) // negative number check
                         {
                             buffer = "Invalid amount";
                         }
@@ -545,7 +522,7 @@ void* client_thread(void* arg)
             }
             else
             {
-                buffer = "Shit is Fucked";
+                buffer = "Error encountered";
             }
         }
         else
@@ -558,11 +535,6 @@ void* client_thread(void* arg)
         std::string ciphertext = createPacket(buffer,key, iv);
         strcpy(packet, ciphertext.data());
         length = strlen(packet);
-        std::cout << ciphertext.size() << std::endl;
-        //encrypt
-        //TODO: put new data in packet
-
-        //send the new packet back to the client
         if(sizeof(int) != send(csock, &length, sizeof(int), 0))
         {
             printf("[bank] fail to send packet length\n");
@@ -577,7 +549,6 @@ void* client_thread(void* arg)
     }
 
     printf("[bank] client ID #%d disconnected\n", csock);
-
     close(csock);
     return NULL;
 }
@@ -593,10 +564,9 @@ void* console_thread(void* arg)
 
         printf("bank> ");
         fgets(buf, 79, stdin);
-        buf[strlen(buf)-1] = '\0';  //trim off trailing newline
+        buf[strlen(buf)-1] = '\0';  
 
-        //TODO: your input parsing code has to go here
-
+        // parse commands
         char hold[strlen(buf)];
         strcpy(hold, buf);
         char * token = strtok(hold," ");
@@ -608,13 +578,12 @@ void* console_thread(void* arg)
             token = strtok(NULL," ");
         }
 
-
         if(commands[0] == "deposit" && commands.size() == 3)
         {
             Account *current = NULL;
-            for(i = 0; i < Accounts.size(); i++)
+            for(i = 0; i < Accounts.size(); i++) // find account
             {
-                if(Accounts[i].getName() == commands[1])
+                if(Accounts[i].getName() == commands[1]) 
                 {
                     current = &Accounts[i];
                     break;
@@ -622,7 +591,7 @@ void* console_thread(void* arg)
             }
             if(atoi(commands[2].c_str()) <= 0)
             {
-                std::cout << "Invalid amount" << std::endl;
+                printf( "Invalid amount\n");
             }
             else if(current == NULL)
             {
@@ -655,7 +624,7 @@ void* console_thread(void* arg)
         }
         else
         {
-            std::cout << "Command not valid" << std::endl;
+            printf( "Command not valid\n");
         }
     }
 }
@@ -664,7 +633,7 @@ void* backup_thread(void* arg)
 {
     while(1)
     {
-        //Every 5 seconds the accounts will be backed up.
+        //Every 5 seconds the accounts will be backed up to the data file
         sleep(5);
         std::ofstream account_data("account_data.data");
 
