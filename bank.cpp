@@ -305,6 +305,12 @@ void* client_thread(void* arg)
 {
     //TODO handshake and establish keys
     int csock = *(int*)arg;
+    struct timeval tv;
+ 
+    tv.tv_sec = 15;       /* Timeout in seconds */
+ 
+    setsockopt(csock, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+    setsockopt(csock, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 
     int m_length;
     char m_packet[1024];

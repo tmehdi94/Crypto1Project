@@ -311,6 +311,7 @@ int main(int argc, char* argv[])
 		printf("fail to connect to proxy\n");
 		return -1;
 	}
+
     //TODO establish handshake and transfer keys
     CryptoPP::RSA::PublicKey bankKey;
     LoadPublicKey("keys/bank.key", bankKey);
@@ -538,7 +539,7 @@ int main(int argc, char* argv[])
                 if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
                 {
                     std::cout << length;
-                    printf("fail to read packet length\n");
+                    printf("fail to read packet length: possible timeout?\n");
                     break;
                 }
                 if(length >= 1024)
