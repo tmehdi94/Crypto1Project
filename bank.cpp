@@ -39,8 +39,7 @@ void* backup_thread(void* arg);
 struct rsa {
    CryptoPP::RSA::PrivateKey priv;
    CryptoPP::RSA::PublicKey pub;
-   byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
-   byte iv[CryptoPP::AES::BLOCKSIZE];
+
 };
 rsa keys;
 
@@ -134,7 +133,7 @@ void decryptCommand(std::string& decipher, std::string& command,const byte key[]
     stfDecryptor.MessageEnd();
 }
 
-std::string createPacket(std::string input){
+std::string createPacket(std::string input, byte* key, byte* iv){
     std::string hash = createHash(input + APPSALT);
     input = input + " " + hash;
     /*
@@ -147,7 +146,7 @@ std::string createPacket(std::string input){
 
     padCommand(input);
     //std::cout << input << std::endl;
-    encryptCommand(ciphertext, input,(const byte*) keys.key,(const byte*) keys.iv);
+    encryptCommand(ciphertext, input,(const byte*) key,(const byte*) iv);
     std::string encodedCipher;
     CryptoPP::StringSource(ciphertext, true,
         new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
@@ -157,7 +156,7 @@ std::string createPacket(std::string input){
     return ciphertext;
 }
 
-void decryptPacket(std::string& packet){
+void decryptPacket(std::string& packet, byte* key, byte* iv){
     //std::cout << packet.size() << std::endl;
     //std::cout << packet << std::endl;
     std::string ciphertext;
@@ -173,7 +172,7 @@ void decryptPacket(std::string& packet){
     //std::cout << strlen((char*)keys.key);
     //std::cout <<"keys: " << strlen((char*)keys.key) << keys.key << std::endl << "iv: "<< strlen((char*)keys.iv) << keys.iv << std::endl;
     //fflush(NULL);
-    decryptCommand(plaintext, ciphertext,(const byte*) keys.key, (const byte*) keys.iv);
+    decryptCommand(plaintext, ciphertext,(const byte*) key, (const byte*) iv);
     //std::cout << plaintext << std::endl;
     unpadCommand(plaintext);
     packet = plaintext;
@@ -193,8 +192,7 @@ int main(int argc, char* argv[])
     keys.priv = privKey;
     //keys.key = (const byte*) "";
     //keys.iv = (const byte*) "";
-    memset((void*) keys.key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    memset((void*)keys.iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    
 
     if (account_data)
     {
@@ -312,6 +310,11 @@ void* client_thread(void* arg)
     setsockopt(csock, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
     setsockopt(csock, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 
+    byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
+    byte iv[CryptoPP::AES::BLOCKSIZE];
+    memset((void*) key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset((void*) iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+
     int m_length;
     char m_packet[1024];
     if(sizeof(int) != recv(csock, &m_length, sizeof(int), 0)){
@@ -350,12 +353,12 @@ void* client_thread(void* arg)
     CryptoPP::AutoSeededRandomPool rnd;
     // Generate a random key
     //byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
-    rnd.GenerateBlock( keys.key, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    rnd.GenerateBlock( key, CryptoPP::AES::DEFAULT_KEYLENGTH );
     //printf("%s\n", key);
 
     // Generate a random IV
     //byte iv[CryptoPP::AES::BLOCKSIZE];
-    rnd.GenerateBlock(keys.iv, CryptoPP::AES::BLOCKSIZE);
+    rnd.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
     //std::string k = std::string((const byte*)key) + " " + std::string((const byte*)iv);
     
     //memset( keys.key, (char*)key, CryptoPP::AES::DEFAULT_KEYLENGTH );
@@ -365,10 +368,10 @@ void* client_thread(void* arg)
     //printf("%d\n",CryptoPP::AES::DEFAULT_KEYLENGTH );
     //fflush(NULL);
     std::stringstream hold;
-    hold << keys.key << " " << keys.iv;
+    hold <<key << ",," << iv;
     std::string k = hold.str();
-    //std::cout << "concat: " << k << std::endl;
-    //std::cout << "key: " << key << std::endl << "iv: " << iv << std::endl;
+    std::cout << "concat: " << k << std::endl;
+    std::cout << "key: " << key << std::endl << "iv: " << iv << std::endl;
 
     CryptoPP::Integer id((const byte *)k.data(), k.size());
     CryptoPP::Integer c = atmKey.ApplyFunction(id);
@@ -426,7 +429,7 @@ void* client_thread(void* arg)
         //TODO: process packet data
         
         std::string text = std::string(packet);
-        decryptPacket(text);
+        decryptPacket(text, key, iv);
         //std::cout << text <<std::endl;
         //decrypt and authenticate
         //store in buffer after decryption
@@ -552,7 +555,7 @@ void* client_thread(void* arg)
         }
         bzero(packet, strlen(packet));
         
-        std::string ciphertext = createPacket(buffer);
+        std::string ciphertext = createPacket(buffer,key, iv);
         strcpy(packet, ciphertext.data());
         length = strlen(packet);
         std::cout << ciphertext.size() << std::endl;

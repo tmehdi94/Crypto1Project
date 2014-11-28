@@ -26,8 +26,8 @@
 #include "crypto++/files.h"
 #include "crypto++/cryptlib.h"
 const std::string appSalt = "THISISAFUCKINGDOPESALT";
-byte AES_iv[CryptoPP::AES::BLOCKSIZE];
-byte AES_key[CryptoPP::AES::DEFAULT_KEYLENGTH];
+byte* AES_iv;// AES_iv[CryptoPP::AES::BLOCKSIZE];
+byte* AES_key;// AES_key[CryptoPP::AES::DEFAULT_KEYLENGTH];
 
 
 
@@ -258,8 +258,8 @@ int main(int argc, char* argv[])
 		printf("Usage: atm proxy-port\n");
 		return -1;
 	}
-    memset( AES_key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    memset( AES_iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    //memset( AES_key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    //memset( AES_iv, 0x00, CryptoPP::AES::BLOCKSIZE );
     CryptoPP::AutoSeededRandomPool prng;
     CryptoPP::RSA::PrivateKey privKey;
     privKey.GenerateRandomWithKeySize(prng, 1024);
@@ -367,23 +367,25 @@ int main(int argc, char* argv[])
     size_t req = plain.MinEncodedSize();
     recovered.resize(req);
     plain.Encode((byte *)recovered.data(), recovered.size());
-    //std::cout << "encoded: " << recovered << std::endl;
+    std::cout << "encoded: " << recovered << std::endl;
 
-    std::string holder = recovered.substr(0, recovered.find(" "));
+    std::string holder = recovered.substr(0, recovered.find(",,"));
     //AES_key = (const byte*) holder.data();//recovered.substr(0, recovered.find(" ")).data();//result;
     //memset( (void*)AES_key, (int) holder.data(), CryptoPP::AES::DEFAULT_KEYLENGTH );
-    //AES_key = (byte*)holder.data();
+    AES_key = (byte*)holder.data();
     //strcpy(AES_key, (byte*)holder.data());
-    std::string holder1 = recovered.substr(recovered.find(" ") + 1);
-    for(int i=0; i < 16; i++){
+    std::string holder1 = recovered.substr(recovered.find(",,") + 2);
+    AES_iv = (byte*)holder1.data();
+    /*for(int i=0; i < 16; i++){
         AES_key[i] = holder.data()[i];
         AES_iv[i] = holder1.data()[i];
     }
+    */
 
 
     //result;
      //memset( (void*)AES_iv, (int) holder1.data(), CryptoPP::AES::BLOCKSIZE );
-    //std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
+    std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
     //std::cout << AES_key.size() << std::endl << AES_iv.size() << std::endl;
 	//bool loggedIn = false;
 	//input loop
