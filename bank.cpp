@@ -16,26 +16,33 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-
-#include "local/cryptopp/modes.h"
-#include "local/cryptopp/aes.h"
-#include "local/cryptopp/filters.h"
-#include "local/cryptopp/integer.h"
-#include "local/cryptopp/rsa.h"
-#include "local/cryptopp/osrng.h"
-#include "local/cryptopp/sha.h"
-#include "local/cryptopp/hex.h"
-#include "local/cryptopp/files.h"
-#include "local/cryptopp/cryptlib.h"
+#include "crypto++/modes.h"
+#include "crypto++/aes.h"
+#include "crypto++/filters.h"
+#include "crypto++/integer.h"
+#include "crypto++/rsa.h"
+#include "crypto++/osrng.h"
+#include "crypto++/sha.h"
+#include "crypto++/hex.h"
+#include "crypto++/files.h"
+#include "crypto++/cryptlib.h"
 
 #include "account.h"
 
 const std::string APPSALT = "THISISAFUCKINGDOPESALT";
+CryptoPP::AutoSeededRandomPool prng;
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
 void* backup_thread(void* arg);
 
+struct rsa {
+   CryptoPP::RSA::PrivateKey priv;
+   CryptoPP::RSA::PublicKey pub;
+   byte* aes;// aes[CryptoPP::AES::DEFAULT_KEYLENGTH];
+   byte* iv;// iv[CryptoPP::AES::BLOCKSIZE];
+};
+rsa keys;
 
 void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt)
 {
@@ -170,11 +177,12 @@ std::vector<Account> Accounts;
 int main(int argc, char* argv[])
 {
     std::ifstream account_data("account_data.data");
-    CryptoPP::AutoSeededRandomPool prng;
     CryptoPP::RSA::PrivateKey privKey;
     privKey.GenerateRandomWithKeySize(prng,1024);
     CryptoPP::RSA::PublicKey pubKey(privKey);
     SavePublicKey("keys/bank.key", pubKey);
+    keys.pub = pubKey;
+    keys.priv = privKey;
 
     if (account_data)
     {
@@ -284,8 +292,92 @@ int main(int argc, char* argv[])
 void* client_thread(void* arg)
 {
     //TODO handshake and establish keys
-
     int csock = *(int*)arg;
+
+    int m_length;
+    char m_packet[1024];
+    if(sizeof(int) != recv(csock, &m_length, sizeof(int), 0)){
+        return NULL;
+    }
+    if(m_length >= 1024)
+    {
+        printf("packet too long\n");
+        return NULL;
+    }
+    if(m_length != recv(csock, m_packet, m_length, 0))
+    {
+        printf("[bank] fail to read packet\n");
+        return NULL;
+    }
+    std::string m = std::string(m_packet);
+    //std::cout << m;
+    std::string message = m.substr(0, m.find(" "));
+    //std::cout << createHash(message + APPSALT) << std::endl;
+    if(m.substr(m.find(" ")+1) != createHash(message + APPSALT)){
+        printf("Hackers!!\n");
+        return NULL;
+    }
+    CryptoPP::Integer cipher(message.c_str());//std::atol(message.c_str()));
+    CryptoPP::Integer plain = (keys.priv).CalculateInverse(prng, cipher);
+    //std::cout << std::hex << plain << std::endl;
+    std::string recovered;
+    size_t req = plain.MinEncodedSize();
+    recovered.resize(req);
+    plain.Encode((byte *)recovered.data(), recovered.size());
+
+    CryptoPP::RSA::PublicKey atmKey;
+    LoadPublicKey(recovered, atmKey);
+
+    //create AES key
+    CryptoPP::AutoSeededRandomPool rnd;
+    // Generate a random key
+    byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
+    rnd.GenerateBlock( key, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    //printf("%s\n", key);
+
+    // Generate a random IV
+    byte iv[CryptoPP::AES::BLOCKSIZE];
+    rnd.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
+    //std::string k = std::string((const byte*)key) + " " + std::string((const byte*)iv);
+    keys.iv = iv;
+    keys.aes = key;
+
+
+    std::stringstream hold;
+    hold << key << " " << iv;
+    std::string k = hold.str();
+    std::cout << "concat: " << k << std::endl;
+    std::cout << "key: " << key << std::endl << "iv: " << iv << std::endl;
+
+    CryptoPP::Integer id(k.c_str());
+    CryptoPP::Integer c = atmKey.ApplyFunction(id);
+    std::stringstream ss;
+    ss << std::hex << c;//ss << c.ConvertToLong();
+    message = ss.str();
+    std::cout << "message: " << message << std::endl;
+    //std::cout << message << std::endl;
+    std::string handCheck = createHash(message + APPSALT);
+    message = message + " " + handCheck;
+
+
+
+    bzero(m_packet, strlen(m_packet));
+    strcpy(m_packet, message.c_str());
+
+    if(sizeof(int) != send(csock, &m_length, sizeof(int), 0))
+    {
+        printf("fail to send packet length\n");
+        return NULL;
+    }
+    if(m_length != send(csock, (void*)m_packet, m_length, 0))
+    {
+        printf("fail to send packet\n");
+        return NULL;
+    }
+
+    //std::cout << std::hex << keys.aes << std::endl << std::hex << keys.iv << std::endl;
+
+
 
     printf("[bank] client ID #%d connected\n", csock);
 
@@ -355,8 +447,8 @@ void* client_thread(void* arg)
                 }
                 if(current == NULL)
                 {
-                    //login and pin dont match, or other error
-                    buffer = "Login error";
+                    //login and pin dont match
+                    buffer = "Username/PIN/card don't match";
                 }
 
             }

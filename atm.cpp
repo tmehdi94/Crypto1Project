@@ -15,18 +15,21 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-
-#include "local/cryptopp/modes.h"
-#include "local/cryptopp/aes.h"
-#include "local/cryptopp/filters.h"
-#include "local/cryptopp/integer.h"
-#include "local/cryptopp/rsa.h"
-#include "local/cryptopp/osrng.h"
-#include "local/cryptopp/sha.h"
-#include "local/cryptopp/hex.h"
-#include "local/cryptopp/files.h"
-#include "local/cryptopp/cryptlib.h"
+#include "crypto++/modes.h"
+#include "crypto++/aes.h"
+#include "crypto++/filters.h"
+#include "crypto++/integer.h"
+#include "crypto++/rsa.h"
+#include "crypto++/osrng.h"
+#include "crypto++/sha.h"
+#include "crypto++/hex.h"
+#include "crypto++/files.h"
+#include "crypto++/cryptlib.h"
 const std::string appSalt = "THISISAFUCKINGDOPESALT";
+
+const byte* AES_iv;
+const byte* AES_key;
+
 
 
 void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt)
@@ -305,9 +308,81 @@ int main(int argc, char* argv[])
 		return -1;
 	}
     //TODO establish handshake and transfer keys
+    CryptoPP::RSA::PublicKey bankKey;
+    LoadPublicKey("keys/bank.key", bankKey);
+    CryptoPP::Integer id((const byte *)id_path.data(), id_path.size());
+    CryptoPP::Integer c = bankKey.ApplyFunction(id);
+    std::stringstream ss;
+    ss << std::hex << c;//ss << c.ConvertToLong();
+    std::string message = ss.str();
+    //std::cout << message << std::endl;
+    std::string handCheck = createHash(message + appSalt);
+    message = message + " " + handCheck;
+    char m_packet[1024];
+    strcpy(m_packet, message.c_str());
+    int m_length = strlen(m_packet);
+    if(sizeof(int) != send(sock, &m_length, sizeof(int), 0))
+    {
+        printf("fail to send packet length\n");
+        return -1;
+    }
+    if(m_length != send(sock, (void*)m_packet, m_length, 0))
+    {
+        printf("fail to send packet\n");
+        return -1;
+    }
 
+    bzero(m_packet, strlen(m_packet));
+    if(sizeof(int) != recv(sock, &m_length, sizeof(int), 0)){
+        return -1;
+    }
+    if(m_length >= 1024)
+    {
+        printf("packet too long\n");
+        return -1;
+    }
+    if(m_length != recv(sock, m_packet, m_length, 0))
+    {
+        printf("[bank] fail to read packet\n");
+        return -1;
+    }
+    //printf("%s\n",m_packet );
 
+    std::string m = std::string(m_packet);
+    message = m.substr(0, m.find(" "));
+    if(m.substr(m.find(" ")+1) != createHash(message + appSalt)){
+        printf("Hackers!!\n");
+        return -1;
+    }
+    std::cout << message;
+    CryptoPP::Integer cipher(message.c_str());//std::atol(message.c_str()));
+    CryptoPP::Integer plain = (privKey).CalculateInverse(prng, cipher);
+    //std::cout << std::hex << plain << std::endl;
+    std::string recovered;
+    size_t req = plain.MinEncodedSize();
+    recovered.resize(req);
+    plain.Encode((byte *)recovered.data(), recovered.size());
+    //std::cout << recovered;
 
+    std::string h;
+    std::string holder = recovered.substr(0, recovered.find(" "));
+    CryptoPP::StringSource(holder, true,
+        new CryptoPP::HexEncoder(new CryptoPP::StringSink(h)) // HexEncoder
+    );
+    const byte* result = (const byte*) h.data();
+    AES_key = result;
+
+    h = "";
+    result = (const byte*) h.data();
+    holder = recovered.substr(recovered.find(" ") + 1);
+    CryptoPP::StringSource(holder, true,
+        new CryptoPP::HexEncoder(new CryptoPP::StringSink(h)) // HexEncoder
+    );
+    result = (const byte*) h.data();
+    AES_iv = result;
+
+    std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
+    //std::cout << AES_key.size() << std::endl << AES_iv.size() << std::endl;
 	//bool loggedIn = false;
 	//input loop
 
