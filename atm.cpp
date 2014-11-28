@@ -317,7 +317,7 @@ int main(int argc, char* argv[])
     std::string message = ss.str();
     //std::cout << message << std::endl;
     std::string handCheck = createHash(message + appSalt);
-    message = message + " " + handCheck;
+    message = message + "~" + handCheck;
     char m_packet[1024];
     strcpy(m_packet, message.c_str());
     int m_length = strlen(m_packet);
@@ -349,37 +349,28 @@ int main(int argc, char* argv[])
     //printf("%s\n",m_packet );
 
     std::string m = std::string(m_packet);
-    message = m.substr(0, m.find(" "));
-    if(m.substr(m.find(" ")+1) != createHash(message + appSalt)){
+    message = m.substr(0, m.find("~"));
+    if(m.substr(m.find("~")+1) != createHash(message + appSalt)){
         printf("Hackers!!\n");
         return -1;
     }
-    std::cout << message;
+    std::cout << "message: " << message << std::endl;
     CryptoPP::Integer cipher(message.c_str());//std::atol(message.c_str()));
-    CryptoPP::Integer plain = (privKey).CalculateInverse(prng, cipher);
-    //std::cout << std::hex << plain << std::endl;
+    CryptoPP::Integer plain = privKey.CalculateInverse(prng, cipher);
+    std::cout <<"decrypted: " << std::hex << plain << std::endl;
     std::string recovered;
     size_t req = plain.MinEncodedSize();
     recovered.resize(req);
     plain.Encode((byte *)recovered.data(), recovered.size());
-    //std::cout << recovered;
+    std::cout << "encoded: " << recovered << std::endl;
 
-    std::string h;
-    std::string holder = recovered.substr(0, recovered.find(" "));
-    CryptoPP::StringSource(holder, true,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(h)) // HexEncoder
-    );
-    const byte* result = (const byte*) h.data();
-    AES_key = result;
 
-    h = "";
-    result = (const byte*) h.data();
-    holder = recovered.substr(recovered.find(" ") + 1);
-    CryptoPP::StringSource(holder, true,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(h)) // HexEncoder
-    );
-    result = (const byte*) h.data();
-    AES_iv = result;
+    std::string holder = recovered.substr(0, recovered.find_last_of("~"));
+    AES_key = (const byte*) holder.data();//result;
+
+
+    holder = recovered.substr(recovered.find_last_of("~") + 1);
+    AES_iv = (const byte*) holder.data();//result;
 
     std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
     //std::cout << AES_key.size() << std::endl << AES_iv.size() << std::endl;

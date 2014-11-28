@@ -39,8 +39,8 @@ void* backup_thread(void* arg);
 struct rsa {
    CryptoPP::RSA::PrivateKey priv;
    CryptoPP::RSA::PublicKey pub;
-   byte* aes;// aes[CryptoPP::AES::DEFAULT_KEYLENGTH];
-   byte* iv;// iv[CryptoPP::AES::BLOCKSIZE];
+   const byte* aes;// aes[CryptoPP::AES::DEFAULT_KEYLENGTH];
+   const byte* iv;// iv[CryptoPP::AES::BLOCKSIZE];
 };
 rsa keys;
 
@@ -311,9 +311,9 @@ void* client_thread(void* arg)
     }
     std::string m = std::string(m_packet);
     //std::cout << m;
-    std::string message = m.substr(0, m.find(" "));
+    std::string message = m.substr(0, m.find("~"));
     //std::cout << createHash(message + APPSALT) << std::endl;
-    if(m.substr(m.find(" ")+1) != createHash(message + APPSALT)){
+    if(m.substr(m.find("~")+1) != createHash(message + APPSALT)){
         printf("Hackers!!\n");
         return NULL;
     }
@@ -339,17 +339,17 @@ void* client_thread(void* arg)
     byte iv[CryptoPP::AES::BLOCKSIZE];
     rnd.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
     //std::string k = std::string((const byte*)key) + " " + std::string((const byte*)iv);
-    keys.iv = iv;
-    keys.aes = key;
+    keys.iv = (const byte*) iv;
+    keys.aes = (const byte*) key;
 
 
     std::stringstream hold;
-    hold << key << " " << iv;
+    hold << key << "~" << iv;
     std::string k = hold.str();
     std::cout << "concat: " << k << std::endl;
     std::cout << "key: " << key << std::endl << "iv: " << iv << std::endl;
 
-    CryptoPP::Integer id(k.c_str());
+    CryptoPP::Integer id((const byte *)k.data(), k.size());
     CryptoPP::Integer c = atmKey.ApplyFunction(id);
     std::stringstream ss;
     ss << std::hex << c;//ss << c.ConvertToLong();
@@ -357,7 +357,7 @@ void* client_thread(void* arg)
     std::cout << "message: " << message << std::endl;
     //std::cout << message << std::endl;
     std::string handCheck = createHash(message + APPSALT);
-    message = message + " " + handCheck;
+    message = message + "~" + handCheck;
 
 
 
