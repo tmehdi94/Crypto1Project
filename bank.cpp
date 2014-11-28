@@ -39,8 +39,8 @@ void* backup_thread(void* arg);
 struct rsa {
    CryptoPP::RSA::PrivateKey priv;
    CryptoPP::RSA::PublicKey pub;
-   byte* key;// aes[CryptoPP::AES::DEFAULT_KEYLENGTH];
-   byte* iv;// iv[CryptoPP::AES::BLOCKSIZE];
+   byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
+   byte iv[CryptoPP::AES::BLOCKSIZE];
 };
 rsa keys;
 
@@ -114,7 +114,7 @@ void unpadCommand(std::string &plaintext) {
 }
 
 
-void encryptCommand(std::string& ciphertext, std::string& command, byte* key, byte* iv) {
+void encryptCommand(std::string& ciphertext, std::string& command,const byte key[],const byte iv[]) {
     CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
 
@@ -125,7 +125,7 @@ void encryptCommand(std::string& ciphertext, std::string& command, byte* key, by
 
 }
 
-void decryptCommand(std::string& decipher, std::string& command, byte* key, byte* iv) {
+void decryptCommand(std::string& decipher, std::string& command,const byte key[], const byte iv[]) {
     CryptoPP::AES::Decryption aesDecryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption( aesDecryption, iv );
 
@@ -147,18 +147,21 @@ std::string createPacket(std::string input){
 
     padCommand(input);
     //std::cout << input << std::endl;
-    encryptCommand(ciphertext, input, keys.key, keys.iv);
+    encryptCommand(ciphertext, input,(const byte*) keys.key,(const byte*) keys.iv);
     std::string encodedCipher;
     CryptoPP::StringSource(ciphertext, true,
         new CryptoPP::HexEncoder(new CryptoPP::StringSink(encodedCipher)) // HexEncoder
     );
     ciphertext = encodedCipher;
+    //std::cout << ciphertext << std::endl;
     return ciphertext;
 }
 
 void decryptPacket(std::string& packet){
+    //std::cout << packet.size() << std::endl;
+    //std::cout << packet << std::endl;
     std::string ciphertext;
-
+    //std::cout << packet << std::endl;
     CryptoPP::StringSource(packet, true,
         new CryptoPP::HexDecoder(new CryptoPP::StringSink(ciphertext)) // HexEncoder
     );
@@ -167,9 +170,14 @@ void decryptPacket(std::string& packet){
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );*/
-    decryptCommand(plaintext, ciphertext, keys.key, keys.iv);
+    //std::cout << strlen((char*)keys.key);
+    //std::cout <<"keys: " << strlen((char*)keys.key) << keys.key << std::endl << "iv: "<< strlen((char*)keys.iv) << keys.iv << std::endl;
+    //fflush(NULL);
+    decryptCommand(plaintext, ciphertext,(const byte*) keys.key, (const byte*) keys.iv);
+    //std::cout << plaintext << std::endl;
     unpadCommand(plaintext);
     packet = plaintext;
+    //std::cout << packet << std::endl;
 }
 
 std::vector<Account> Accounts;
@@ -183,6 +191,10 @@ int main(int argc, char* argv[])
     SavePublicKey("keys/bank.key", pubKey);
     keys.pub = pubKey;
     keys.priv = privKey;
+    //keys.key = (const byte*) "";
+    //keys.iv = (const byte*) "";
+    memset((void*) keys.key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset((void*)keys.iv, 0x00, CryptoPP::AES::BLOCKSIZE );
 
     if (account_data)
     {
@@ -311,9 +323,9 @@ void* client_thread(void* arg)
     }
     std::string m = std::string(m_packet);
     //std::cout << m;
-    std::string message = m.substr(0, m.find("~"));
+    std::string message = m.substr(0, m.find(" "));
     //std::cout << createHash(message + APPSALT) << std::endl;
-    if(m.substr(m.find("~")+1) != createHash(message + APPSALT)){
+    if(m.substr(m.find(" ")+1) != createHash(message + APPSALT)){
         printf("Hackers!!\n");
         return NULL;
     }
@@ -331,20 +343,23 @@ void* client_thread(void* arg)
     //create AES key
     CryptoPP::AutoSeededRandomPool rnd;
     // Generate a random key
-    byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
-    rnd.GenerateBlock( key, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    //byte key[CryptoPP::AES::DEFAULT_KEYLENGTH];
+    rnd.GenerateBlock( keys.key, CryptoPP::AES::DEFAULT_KEYLENGTH );
     //printf("%s\n", key);
 
     // Generate a random IV
-    byte iv[CryptoPP::AES::BLOCKSIZE];
-    rnd.GenerateBlock(iv, CryptoPP::AES::BLOCKSIZE);
+    //byte iv[CryptoPP::AES::BLOCKSIZE];
+    rnd.GenerateBlock(keys.iv, CryptoPP::AES::BLOCKSIZE);
     //std::string k = std::string((const byte*)key) + " " + std::string((const byte*)iv);
-    keys.iv = (byte*) iv;
-    keys.key = (byte*) key;
-
-
+    
+    //memset( keys.key, (char*)key, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    //memset( keys.iv, (char*)iv, CryptoPP::AES::BLOCKSIZE );
+    //keys.iv = (byte*) iv;
+    //keys.key = (byte*) key;
+    //printf("%d\n",CryptoPP::AES::DEFAULT_KEYLENGTH );
+    //fflush(NULL);
     std::stringstream hold;
-    hold << key << "~" << iv;
+    hold << keys.key << " " << keys.iv;
     std::string k = hold.str();
     //std::cout << "concat: " << k << std::endl;
     //std::cout << "key: " << key << std::endl << "iv: " << iv << std::endl;
@@ -357,7 +372,7 @@ void* client_thread(void* arg)
     //std::cout << "message: " << message << std::endl;
     //std::cout << message << std::endl;
     std::string handCheck = createHash(message + APPSALT);
-    message = message + "~" + handCheck;
+    message = message + " " + handCheck;
 
 
 
@@ -374,7 +389,6 @@ void* client_thread(void* arg)
         printf("fail to send packet\n");
         return NULL;
     }
-
     //std::cout << std::hex << keys.aes << std::endl << std::hex << keys.iv << std::endl;
 
 
@@ -387,14 +401,12 @@ void* client_thread(void* arg)
     Account* current;
     while(1)
     {
-        std::cout << 1 << std::endl;
-        fflush(NULL);
         bzero(packet, strlen(packet));
         //read the packet from the ATM
         if(sizeof(int) != recv(csock, &length, sizeof(int), 0)){
             break;
         }
-        std::cout << length << std::endl;
+        //std::cout << length << std::endl;
         if(length >= 1024)
         {
             printf("packet too long\n");
@@ -406,10 +418,10 @@ void* client_thread(void* arg)
             break;
         }
         //TODO: process packet data
-        fflush(NULL);
+        
         std::string text = std::string(packet);
         decryptPacket(text);
-        std::cout << text <<std::endl;
+        //std::cout << text <<std::endl;
         //decrypt and authenticate
         //store in buffer after decryption
         //unpad?

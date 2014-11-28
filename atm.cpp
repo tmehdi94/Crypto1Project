@@ -26,9 +26,8 @@
 #include "crypto++/files.h"
 #include "crypto++/cryptlib.h"
 const std::string appSalt = "THISISAFUCKINGDOPESALT";
-
-byte* AES_iv;
-byte* AES_key;
+byte AES_iv[CryptoPP::AES::BLOCKSIZE];
+byte AES_key[CryptoPP::AES::DEFAULT_KEYLENGTH];
 
 
 
@@ -166,7 +165,7 @@ void unpadCommand(std::string &plaintext) {
     return;
 }
 
-void encryptCommand(std::string& ciphertext, std::string& command, byte* key, byte* iv) {
+void encryptCommand(std::string& ciphertext, std::string& command,const byte key[],const byte iv[]) {
     CryptoPP::AES::Encryption aesEncryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption( aesEncryption, iv );
 
@@ -181,7 +180,7 @@ void encryptCommand(std::string& ciphertext, std::string& command, byte* key, by
     ciphertext = encodedCipher;
 }
 
-void decryptCommand(std::string& decipher, std::string& command, byte* key, byte* iv) {
+void decryptCommand(std::string& decipher, std::string& command,const byte key[],const byte iv[]) {
     CryptoPP::AES::Decryption aesDecryption(key, CryptoPP::AES::DEFAULT_KEYLENGTH);
     CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption( aesDecryption, iv );
 
@@ -202,7 +201,7 @@ void decryptPacket(std::string& packet){
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
     memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );*/
-    decryptCommand(plaintext, ciphertext, AES_key, AES_iv);
+    decryptCommand(plaintext, ciphertext, (const byte*) AES_key, (const byte*) AES_iv);
     //std::cout << plaintext << std::endl;
     unpadCommand(plaintext);
     packet = plaintext;
@@ -234,13 +233,16 @@ std::string createPacket(std::string input, std::string account){
     std::string ciphertext;
     //printf("%s\n", key);
     //string decipher;
-
+    //std::cout << output <<std::endl;
     padCommand(output);
+    //std::cout << output.size() << std::endl;
     //std::cout << output << std::endl;
     //ciphertext = output;
-    encryptCommand(ciphertext, output, AES_key, AES_iv);
+    //std::cout <<"keys: " << strlen((char*)AES_key) <<AES_key << std::endl << "iv: "<< strlen((char*)AES_iv) <<AES_iv << std::endl;
+    encryptCommand(ciphertext, output,(const byte*) AES_key, (const byte*) AES_iv);
     //std::cout <<"encryption: " <<  ciphertext << " " << ciphertext.size() << std::endl;
     //std::cout << ciphertext.size() << std::endl;
+    //std::cout << ciphertext << std::endl;
     return ciphertext;
 
 }
@@ -256,6 +258,8 @@ int main(int argc, char* argv[])
 		printf("Usage: atm proxy-port\n");
 		return -1;
 	}
+    memset( AES_key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
+    memset( AES_iv, 0x00, CryptoPP::AES::BLOCKSIZE );
     CryptoPP::AutoSeededRandomPool prng;
     CryptoPP::RSA::PrivateKey privKey;
     privKey.GenerateRandomWithKeySize(prng, 1024);
@@ -317,7 +321,7 @@ int main(int argc, char* argv[])
     std::string message = ss.str();
     //std::cout << message << std::endl;
     std::string handCheck = createHash(message + appSalt);
-    message = message + "~" + handCheck;
+    message = message + " " + handCheck;
     char m_packet[1024];
     strcpy(m_packet, message.c_str());
     int m_length = strlen(m_packet);
@@ -349,8 +353,8 @@ int main(int argc, char* argv[])
     //printf("%s\n",m_packet );
 
     std::string m = std::string(m_packet);
-    message = m.substr(0, m.find("~"));
-    if(m.substr(m.find("~")+1) != createHash(message + appSalt)){
+    message = m.substr(0, m.find(" "));
+    if(m.substr(m.find(" ")+1) != createHash(message + appSalt)){
         printf("Hackers!!\n");
         return -1;
     }
@@ -364,14 +368,20 @@ int main(int argc, char* argv[])
     plain.Encode((byte *)recovered.data(), recovered.size());
     //std::cout << "encoded: " << recovered << std::endl;
 
+    std::string holder = recovered.substr(0, recovered.find(" "));
+    //AES_key = (const byte*) holder.data();//recovered.substr(0, recovered.find(" ")).data();//result;
+    //memset( (void*)AES_key, (int) holder.data(), CryptoPP::AES::DEFAULT_KEYLENGTH );
+    //AES_key = (byte*)holder.data();
+    //strcpy(AES_key, (byte*)holder.data());
+    std::string holder1 = recovered.substr(recovered.find(" ") + 1);
+    for(int i=0; i < 16; i++){
+        AES_key[i] = holder.data()[i];
+        AES_iv[i] = holder1.data()[i];
+    }
 
-    std::string holder = recovered.substr(0, recovered.find_last_of("~"));
-    AES_key = (byte*) holder.data();//result;
 
-
-    holder = recovered.substr(recovered.find_last_of("~") + 1);
-    AES_iv = (byte*) holder.data();//result;
-
+    //result;
+     //memset( (void*)AES_iv, (int) holder1.data(), CryptoPP::AES::BLOCKSIZE );
     //std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
     //std::cout << AES_key.size() << std::endl << AES_iv.size() << std::endl;
 	//bool loggedIn = false;
@@ -505,7 +515,7 @@ int main(int argc, char* argv[])
                 //std::cout << ciphertext.size() << std::endl;
                 strcpy(packet, ciphertext.data());
                 length = strlen(packet);
-                std::cout << length << std::endl;
+                //std::cout << length << std::endl;
 
                 if(sizeof(int) != send(sock, &length, sizeof(int), 0))
                 {
@@ -543,7 +553,7 @@ int main(int argc, char* argv[])
                 std::string input = plaintext.substr(0, plaintext.find_last_of(' '));
                 std::string hash = plaintext.substr(plaintext.find_last_of(' ') + 1);
                 std::string checksum = createHash(input + appSalt);
-                std::cout << checksum << std::endl << hash << std::endl;
+                //std::cout << checksum << std::endl << hash << std::endl;
                 if(checksum != hash){
                     printf("Hackers!!!\n");
                     break;
