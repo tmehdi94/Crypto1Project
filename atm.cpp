@@ -27,8 +27,8 @@
 #include "crypto++/cryptlib.h"
 const std::string appSalt = "THISISAFUCKINGDOPESALT";
 
-const byte* AES_iv;
-const byte* AES_key;
+byte* AES_iv;
+byte* AES_key;
 
 
 
@@ -191,19 +191,19 @@ void decryptCommand(std::string& decipher, std::string& command, byte* key, byte
 }
 
 void decryptPacket(std::string& packet){
-    std::cout << packet.size() << std::endl;
+    //std::cout << packet.size() << std::endl;
     std::string ciphertext;
 
     CryptoPP::StringSource(packet, true,
         new CryptoPP::HexDecoder(new CryptoPP::StringSink(ciphertext)) // HexEncoder
     );
     std::string plaintext;
-
+    /*
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
-    decryptCommand(plaintext, ciphertext, key, iv);
-    std::cout << plaintext << std::endl;
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );*/
+    decryptCommand(plaintext, ciphertext, AES_key, AES_iv);
+    //std::cout << plaintext << std::endl;
     unpadCommand(plaintext);
     packet = plaintext;
 }
@@ -227,18 +227,18 @@ std::string createPacket(std::string input, std::string account){
     std::string output = input + " " + account;
     std::string hash = createHash(output + APPSALT);
     output = output + " " + hash;
-
+    /*
     byte key[ CryptoPP::AES::DEFAULT_KEYLENGTH ], iv[ CryptoPP::AES::BLOCKSIZE ];
     memset( key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH );
-    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+    memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );*/
     std::string ciphertext;
-    printf("%s\n", key);
+    //printf("%s\n", key);
     //string decipher;
 
     padCommand(output);
-    std::cout << output << std::endl;
+    //std::cout << output << std::endl;
     //ciphertext = output;
-    encryptCommand(ciphertext, output, key, iv);
+    encryptCommand(ciphertext, output, AES_key, AES_iv);
     //std::cout <<"encryption: " <<  ciphertext << " " << ciphertext.size() << std::endl;
     //std::cout << ciphertext.size() << std::endl;
     return ciphertext;
@@ -354,25 +354,25 @@ int main(int argc, char* argv[])
         printf("Hackers!!\n");
         return -1;
     }
-    std::cout << "message: " << message << std::endl;
+    //std::cout << "message: " << message << std::endl;
     CryptoPP::Integer cipher(message.c_str());//std::atol(message.c_str()));
     CryptoPP::Integer plain = privKey.CalculateInverse(prng, cipher);
-    std::cout <<"decrypted: " << std::hex << plain << std::endl;
+    //std::cout <<"decrypted: " << std::hex << plain << std::endl;
     std::string recovered;
     size_t req = plain.MinEncodedSize();
     recovered.resize(req);
     plain.Encode((byte *)recovered.data(), recovered.size());
-    std::cout << "encoded: " << recovered << std::endl;
+    //std::cout << "encoded: " << recovered << std::endl;
 
 
     std::string holder = recovered.substr(0, recovered.find_last_of("~"));
-    AES_key = (const byte*) holder.data();//result;
+    AES_key = (byte*) holder.data();//result;
 
 
     holder = recovered.substr(recovered.find_last_of("~") + 1);
-    AES_iv = (const byte*) holder.data();//result;
+    AES_iv = (byte*) holder.data();//result;
 
-    std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
+    //std::cout << "key: " << AES_key << std::endl << "iv: " << AES_iv << std::endl;
     //std::cout << AES_key.size() << std::endl << AES_iv.size() << std::endl;
 	//bool loggedIn = false;
 	//input loop
@@ -383,6 +383,7 @@ int main(int argc, char* argv[])
 	std::vector<std::string> commands;
 	while(1)
 	{
+        fflush(NULL);
 		bzero(buf, strlen(buf));
 		bzero(packet,strlen(packet));
 		commands.clear();
@@ -501,9 +502,10 @@ int main(int argc, char* argv[])
             {
                 //if no error in input encrypt and pad packet.
                 std::string ciphertext = createPacket(std::string(buf), accountHash);
-                std::cout << ciphertext.size() << std::endl;
+                //std::cout << ciphertext.size() << std::endl;
                 strcpy(packet, ciphertext.data());
                 length = strlen(packet);
+                std::cout << length << std::endl;
 
                 if(sizeof(int) != send(sock, &length, sizeof(int), 0))
                 {
@@ -515,7 +517,7 @@ int main(int argc, char* argv[])
                     printf("fail to send packet\n");
                     break;
                 }
-
+                //std::cout << "FUCK" << std::endl; fflush(NULL);
                 length = 1;
                 bzero(packet, strlen(packet));
                 //TODO: do something with response packet
